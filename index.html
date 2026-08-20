@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GHOSTWIRE // Deep Signal Terminal</title>
+<style>
+:root{--fg:#73ff9c;--dim:#2a8f4d;--bg:#020704;--glow:rgba(80,255,130,.32);--danger:#ff4b5f}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:Consolas,"Courier New",monospace}
+body{color:var(--fg)}
+#screen{position:fixed;inset:0;background:
+ radial-gradient(circle at 50% 45%,rgba(18,60,30,.18),transparent 60%),
+ linear-gradient(#010503,#000);overflow:hidden}
+#terminal{position:absolute;inset:0;padding:26px 30px 74px;overflow:hidden;white-space:pre-wrap;font-size:clamp(12px,1.35vw,18px);line-height:1.28;text-shadow:0 0 7px var(--glow);z-index:4}
+.line{min-height:1.28em}.cursor{display:inline-block;width:.62em;height:1.05em;vertical-align:-.15em;background:var(--fg);box-shadow:0 0 10px var(--fg);animation:blink .82s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+#scanlines{pointer-events:none;position:absolute;inset:0;z-index:8;opacity:.18;background:repeating-linear-gradient(0deg,rgba(0,0,0,.0) 0,rgba(0,0,0,.0) 2px,rgba(0,0,0,.65) 3px,rgba(0,0,0,.65) 4px)}
+#vignette{pointer-events:none;position:absolute;inset:0;z-index:9;box-shadow:inset 0 0 150px #000}
+
+#rainzone{
+ pointer-events:none;position:absolute;z-index:2;overflow:hidden;
+ width:34vw;height:38vh;opacity:.34;
+ -webkit-mask-image:radial-gradient(ellipse at center,#000 42%,transparent 88%);
+ mask-image:radial-gradient(ellipse at center,#000 42%,transparent 88%);
+ transition:left 2.4s ease,top 2.4s ease,width 2.4s ease,height 2.4s ease,opacity 1.2s ease;
+}
+.raincol{
+ position:absolute;top:-130%;white-space:pre;font-size:11px;line-height:1.02;
+ color:rgba(80,255,135,.30);text-shadow:0 0 5px rgba(70,255,130,.22);
+ writing-mode:vertical-rl;letter-spacing:2px;
+ animation:rainfall var(--rdur) linear infinite;
+}
+.raincol .rhead{color:rgba(220,255,230,.8);text-shadow:0 0 9px rgba(130,255,175,.6)}
+@keyframes rainfall{
+ from{transform:translateY(-35vh)}
+ to{transform:translateY(105vh)}
+}
+
+#streams{pointer-events:none;position:absolute;inset:0;z-index:5;overflow:hidden;mix-blend-mode:screen}
+.stream{position:absolute;left:0;top:0;transform-origin:0 50%;white-space:nowrap;font-size:11px;line-height:1;color:rgba(112,255,166,.20);text-shadow:0 0 5px rgba(75,255,135,.22);will-change:transform,opacity}
+.stream .head{color:rgba(210,255,225,.72);text-shadow:0 0 8px rgba(130,255,175,.55)}
+.stream .hot{color:rgba(130,255,180,.38)}
+.stream .dim{color:rgba(70,190,120,.13)}
+.stream-band{position:absolute;left:-25vw;top:-4px;width:150vw;height:8px;background:linear-gradient(90deg,transparent,rgba(90,255,145,.025),rgba(150,255,190,.07),rgba(90,255,145,.025),transparent);filter:blur(2px)}
+#flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
+.flash{animation:flash .22s ease-out}
+@keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
+#hud{position:absolute;left:18px;right:18px;bottom:14px;z-index:15;display:flex;align-items:center;gap:12px;padding:8px 11px;border:1px solid rgba(100,255,150,.22);background:rgba(0,10,4,.72);backdrop-filter:blur(4px);font-size:12px}
+button,select,input{accent-color:var(--fg);font:inherit}
+button,select{background:#031108;color:var(--fg);border:1px solid var(--dim);padding:5px 9px}
+button:hover{box-shadow:0 0 10px var(--glow)}
+.spacer{flex:1}.status{color:#9bffb8}
+#boot{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:#000;color:var(--fg);font-size:20px;letter-spacing:3px;transition:opacity .8s}
+.small{opacity:.65;font-size:11px}
+@media(max-width:700px){#terminal{padding:18px 16px 94px;font-size:12px}#hud{flex-wrap:wrap}.spacer{display:none}}
+</style>
+</head>
+<body>
+<div id="screen">
+ <div id="boot">GHOSTWIRE // INITIALIZING<span class="cursor"></span></div>
+ <div id="terminal"></div>
+ <div id="rainzone"></div>
+ <div id="streams"></div>
+ <div id="flash"></div>
+ <div id="scanlines"></div><div id="vignette"></div>
+ <div id="hud">
+   <button id="toggle">PAUSE</button>
+   <button id="burst">CODE STORM</button>
+   <label>SPEED <input id="speed" type="range" min="1" max="100" value="82"></label>
+   <label>CHAOS <input id="chaos" type="range" min="1" max="100" value="52"></label>
+   <button id="full">FULLSCREEN</button>
+   <span class="spacer"></span><span class="status">SIMULATION ONLY // NO NETWORK ACCESS</span>
+ </div>
+</div>
+<script>
+const term=document.querySelector('#terminal'), streams=document.querySelector('#streams'), rainzone=document.querySelector('#rainzone'), flash=document.querySelector('#flash');
+const speed=document.querySelector('#speed'), chaos=document.querySelector('#chaos');
+let running=true, count=0, known={}, cursor=document.createElement('span'); cursor.className='cursor';
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a, pick=a=>a[R(0,a.length-1)], sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const ip=()=>`10.0.0.${R(2,254)}`;
+const tags=['SCAN','TRACE','AUTH','HEUR','SYS','NODE','HASH','ROUTE','MEM','PROC','LINK','WARN'];
+const ordinary=[
+ ()=>`TCP/${pick([22,80,443,8080,9100,31337])} response from ${ip()}`,
+ ()=>`${R(1200,980000).toLocaleString()} packets analyzed // entropy ${R(71,99)}.${R(10,99)}%`,
+ ()=>`Route ${ip()} -> ${ip()} latency ${R(1,89)}ms`,
+ ()=>`Unknown daemon signature ${Math.random().toString(16).slice(2,10).toUpperCase()}`,
+ ()=>`Encrypted handshake accepted from ${ip()}`,
+ ()=>`Memory aperture 0x${R(0x100000,0xffffff).toString(16).toUpperCase()} mapped`,
+ ()=>`Reverse lookup failed for ${ip()} // suspicious vibes +${R(2,9)}`,
+ ()=>`Port 8080 detected on ${ip()} // VERY SUSPICIOUS apparently`,
+ ()=>`Firewall confidence ${R(42,99)}% // firewall refuses to elaborate`,
+ ()=>`Heartbeat age ${R(1,99)} // node refuses to identify itself`
+];
+const nerd=[
+ ()=>`Gibson signature detected at ${ip()} // Crash Override nearby`,
+ ()=>`Acid Burn handshake accepted // HACK THE PLANET flag set`,
+ ()=>`Da Vinci payload found in garbage file // Ellingson route unstable`,
+ ()=>`White Rabbit process forked at ${ip()} // follow? Y/N`,
+ ()=>`Black cat process executed twice // deja vu threshold exceeded`,
+ ()=>`Agent Smith replication count: ${R(2,96)} // exit phone unavailable`,
+ ()=>`There-is-no-spoon protocol active on ${ip()}`,
+ ()=>`Kung Fu module download ${R(12,99)}% // user: "I know kung fu"`,
+ ()=>`Mnemonic courier buffer ${R(161,420)}GB / 160GB // THIS SEEMS BAD`,
+ ()=>`Synaptic seepage warning // wet-wire checksum mismatch`,
+ ()=>`Lo-Tek uplink acquired // Jones interface responding`,
+ ()=>`Jones located // classification: dolphin // of course he is`,
+ ()=>`T-800 at ${ip()} claims hostname HP-LASERJET`,
+ ()=>`SKYNET status ONLINE // Judgment Day waiting for Windows Update`,
+ ()=>`UNIX SYSTEM detected // somebody knows this`,
+ ()=>`Stargate unsolicited dial request // destination: ABYDOS`,
+ ()=>`R2 unit has acquired domain admin // nobody stopped him`,
+ ()=>`Xenomorph signature classified as ROOMBA // confidence ${R(60,99)}%`,
+ ()=>`HAL rejected sudo // Dave privileges insufficient`,
+ ()=>`Cake server reachable // authenticity remains questionable`,
+ ()=>`Flux capacitor requests 1.21 GW // power budget denied`,
+ ()=>`WOPR session open // SHALL WE PLAY A GAME?`
+];
+
+const rainGlyphs="01ABCDEF∆λΞΨЖฬアカサタナハマヤラワｱｶｻﾀﾅﾊﾏﾔﾗﾜ<>[]{}:/\\|*+=-";
+function buildRain(){
+ rainzone.innerHTML='';
+ const cols=R(12,24);
+ for(let i=0;i<cols;i++){
+   const c=document.createElement('div'); c.className='raincol';
+   c.style.left=(i*(100/cols)+Math.random()*2)+'%';
+   c.style.setProperty('--rdur',`${R(2600,7200)}ms`);
+   c.style.animationDelay=`-${R(0,6000)}ms`;
+   let chars='';
+   for(let j=0;j<R(28,65);j++) chars+=pick([...rainGlyphs])+'\n';
+   c.textContent=chars;
+   rainzone.appendChild(c);
+ }
+}
+const rainPositions=[
+ {l:62,t:5,w:34,h:38},{l:3,t:55,w:38,h:36},{l:55,t:52,w:42,h:40},
+ {l:5,t:6,w:31,h:44},{l:35,t:18,w:34,h:52},{l:67,t:34,w:29,h:47}
+];
+function moveRain(){
+ const q=pick(rainPositions);
+ rainzone.style.opacity='.10';
+ setTimeout(()=>{
+   rainzone.style.left=q.l+'vw'; rainzone.style.top=q.t+'vh';
+   rainzone.style.width=q.w+'vw'; rainzone.style.height=q.h+'vh';
+   buildRain();
+   rainzone.style.opacity=String(R(22,42)/100);
+ },700);
+}
+
+const codeTokens=[
+ '7F','A3','0D','FF','E1','09','4C','B7','∆','λ','//','::','<>','[]','{}',
+ 'PTR','MEM','IRQ','NODE','HASH','MUX','SYNC','VOID','ECHO','ROUTE','CACHE',
+ '0xDEAD','0xBEEF','0110','1011','ACK','NUL','RX','TX','SEED','FORK','STACK',
+ 'GLASS','WIRE','SIGNAL','PHASE','VECTOR','SHARD','KERNEL','TRACE','SYNAPSE'
+];
+
+function codeChunk(){
+ let out=[];
+ const n=R(24,62);
+ for(let i=0;i<n;i++){
+   if(Math.random()<.22) out.push(R(0,65535).toString(16).padStart(4,'0').toUpperCase());
+   else if(Math.random()<.16) out.push(Math.random().toString(2).slice(2,10));
+   else out.push(pick(codeTokens));
+ }
+ return out;
+}
+
+function makeStream(force=false){
+ const chance=Number(chaos.value)/100;
+ if(!force && Math.random() > .12 + chance*.34) return;
+
+ const layer=document.createElement('div');
+ layer.className='stream';
+
+ const angle=pick([-155,-135,-118,-72,-48,-27,-12,0,14,31,52,73,108,137,162,180]);
+ const rad=angle*Math.PI/180;
+ const length=Math.hypot(innerWidth,innerHeight)*1.65;
+ const startX=R(-Math.round(innerWidth*.15),Math.round(innerWidth*1.05));
+ const startY=R(-Math.round(innerHeight*.15),Math.round(innerHeight*1.05));
+
+ layer.style.width=length+'px';
+ layer.style.left=startX+'px';
+ layer.style.top=startY+'px';
+ layer.style.transform=`rotate(${angle}deg)`;
+ layer.style.opacity='0';
+
+ const tokens=codeChunk();
+ tokens.forEach((tok,i)=>{
+   const s=document.createElement('span');
+   s.textContent=tok+' ';
+   if(i===0) s.className='head';
+   else s.className=Math.random()<.16?'hot':(Math.random()<.22?'dim':'');
+   layer.appendChild(s);
+ });
+
+ const band=document.createElement('div');
+ band.className='stream-band';
+ layer.appendChild(band);
+ streams.appendChild(layer);
+
+ const duration=R(1600,4300);
+ const travel=R(Math.round(length*.22),Math.round(length*.58));
+ const driftX=Math.cos(rad)*travel, driftY=Math.sin(rad)*travel;
+
+ const anim=layer.animate([
+   {transform:`translate(${-driftX*.20}px,${-driftY*.20}px) rotate(${angle}deg)`,opacity:0,filter:'blur(.5px)'},
+   {offset:.08,opacity:R(12,30)/100,filter:'blur(0px)'},
+   {offset:.28,opacity:R(20,42)/100},
+   {offset:.72,opacity:R(14,34)/100},
+   {transform:`translate(${driftX}px,${driftY}px) rotate(${angle}deg)`,opacity:0,filter:'blur(.35px)'}
+ ],{duration,easing:'linear'});
+
+ // Rewrite pieces while moving so this feels like live computation, not floating text.
+ const mutate=setInterval(()=>{
+   const spans=layer.querySelectorAll('span');
+   for(let j=0;j<R(1,5);j++){
+     const s=spans[R(0,spans.length-1)];
+     if(s) s.textContent=(Math.random()<.45
+       ? R(0,65535).toString(16).padStart(4,'0').toUpperCase()
+       : pick(codeTokens))+' ';
+   }
+ },R(55,125));
+
+ anim.onfinish=()=>{clearInterval(mutate);layer.remove()};
+}
+
+function codeStorm(){
+ const waves=R(5,11);
+ for(let i=0;i<waves;i++) setTimeout(()=>makeStream(true),i*R(70,170));
+}
+
+async function typeLine(text, dramatic=false){
+ const d=document.createElement('div');
+ d.className='line';
+ term.appendChild(d);
+ d.appendChild(cursor);
+
+ for(const ch of text){
+   while(!running) await sleep(80);
+   cursor.before(document.createTextNode(ch));
+
+   const base=101-Number(speed.value);
+   let wait=dramatic
+     ? R(Math.max(8,base+8),Math.max(20,base+48))
+     : R(Math.max(1,Math.floor(base/6)),Math.max(3,base));
+
+   if(/[.:?!]/.test(ch) && Math.random()<.13) wait+=R(30,150);
+   await sleep(wait);
+ }
+
+ cursor.remove();
+ term.scrollTop=term.scrollHeight;
+ await sleep(R(20,Math.max(35,(101-Number(speed.value))*7)));
+}
+
+function screenFlash(){
+ flash.classList.remove('flash'); void flash.offsetWidth; flash.classList.add('flash');
+}
+async function event(){
+ const events=[
+  ['[TRACE] Following encrypted tunnel...','[TRACE] Hop 07 ........ 127.0.0.1','[CRITICAL] HE IS INSIDE THE COMPUTER'],
+  ['[MATRIX] Reality checksum mismatch','[ANOMALY] Black cat detected','[ANOMALY] Black cat detected','[CRITICAL] THEY CHANGED SOMETHING'],
+  ['[NEURAL] Courier interface connected','[CAPACITY] Rated: 160GB','[TRANSFER] Incoming: 320GB','[CRITICAL] SYNAPTIC SEEPAGE DETECTED'],
+  ['[GIBSON] Mainframe acquired','[VIRUS] Da Vinci payload identified','[AUDIO] HACK THE PLANET','[SECURITY] Mess with the best...'],
+  ['[GATE] Chevron 1 encoded','[GATE] Chevron 2 encoded','[GATE] Chevron 3 encoded','[CRITICAL] WHY IS THE ROUTER DIALING ABYDOS?'],
+  ['[AI] HAL administrative challenge','[AI] I am sorry Dave, I am afraid I cannot do that.','[WARN] Dave does not have admin privileges.']
+ ];
+ if(Math.random()<.55) screenFlash();
+ for(const s of pick(events)){makeStream(true); await typeLine(s,true); await sleep(R(180,650))}
+}
+async function main(){
+ await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.3.1','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ while(true){
+   if(!running){await sleep(100);continue}
+   count++; makeStream();
+   if(Math.random()<Number(chaos.value)/700) await event();
+   else await typeLine(`[${pick(tags)}] ${Math.random()<.38?pick(nerd)():pick(ordinary)()}`);
+   while(term.children.length>46) term.firstChild.remove();
+ }
+}
+document.querySelector('#toggle').onclick=e=>{running=!running;e.target.textContent=running?'PAUSE':'RESUME'};
+document.querySelector('#burst').onclick=()=>{screenFlash();codeStorm()};
+document.querySelector('#full').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+setInterval(()=>{if(running)makeStream()},420);
+moveRain();
+(function scheduleRainMove(){
+ setTimeout(()=>{ if(running) moveRain(); scheduleRainMove(); }, R(22000,48000));
+})();
+main();
+</script>
+</body></html>
