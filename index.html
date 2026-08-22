@@ -43,6 +43,16 @@ body{color:var(--fg)}
 .stream .hot{color:rgba(130,255,180,.38)}
 .stream .dim{color:rgba(70,190,120,.13)}
 .stream-band{position:absolute;left:-25vw;top:-4px;width:150vw;height:8px;background:linear-gradient(90deg,transparent,rgba(90,255,145,.025),rgba(150,255,190,.07),rgba(90,255,145,.025),transparent);filter:blur(2px)}
+#incidents{pointer-events:none;position:absolute;inset:0;z-index:18;overflow:hidden}
+.simwin{pointer-events:auto;position:absolute;min-width:260px;max-width:420px;border:2px solid rgba(130,255,175,.75);background:rgba(0,12,5,.97);color:var(--fg);box-shadow:8px 8px #000;font-size:13px}
+.simtitle{padding:5px 8px;border-bottom:1px solid rgba(130,255,175,.42);font-weight:bold}.simbody{padding:16px;white-space:pre-wrap}
+.errorwin{border-color:#ddd;background:#d7d7d7;color:#111;text-shadow:none;box-shadow:5px 5px rgba(0,0,0,.4)}.errorwin .simtitle{background:#173a8a;color:#fff;border:0}
+#takebox{pointer-events:auto;position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:min(520px,86vw);border:1px solid var(--fg);background:rgba(0,8,3,.99);box-shadow:0 0 45px rgba(80,255,130,.25)}
+#takeinput{width:100%;margin-top:14px;background:#010b04;color:var(--fg);border:0;border-bottom:1px solid var(--dim);outline:none;padding:7px;font:inherit}
+#davinciLayer{position:absolute;inset:0;background:rgba(0,0,0,.9);display:grid;place-items:center;overflow:hidden}
+#davinciCore{position:relative;width:min(62vw,650px);aspect-ratio:1}.dv-ring{position:absolute;inset:var(--i);border:1px solid rgba(115,255,156,.4);transform:rotate(var(--r));animation:dvspin var(--s) linear infinite}
+.dv-node{position:absolute;width:6px;height:6px;background:var(--fg);box-shadow:0 0 10px var(--fg);animation:dvpulse .65s steps(2) infinite}.dvtext{position:absolute;left:4%;bottom:5%;white-space:pre;color:rgba(115,255,156,.8);font-size:12px}
+@keyframes dvspin{to{transform:rotate(calc(var(--r) + 360deg))}}@keyframes dvpulse{50%{opacity:.18}}
 #flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
 .flash{animation:flash .22s ease-out}
 @keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
@@ -62,11 +72,13 @@ button:hover{box-shadow:0 0 10px var(--glow)}
  <div id="terminal"></div>
  <div id="rainzone"></div>
  <div id="streams"></div>
- <div id="flash"></div>
+ <div id="incidents"></div><div id="flash"></div>
  <div id="scanlines"></div><div id="vignette"></div>
  <div id="hud">
    <button id="toggle">PAUSE</button>
    <button id="burst">CODE STORM</button>
+<button id="magic">MAGIC WORD</button><button id="errors">ERROR STORM</button>
+<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button>
    <label>SPEED <input id="speed" type="range" min="1" max="100" value="82"></label>
    <label>CHAOS <input id="chaos" type="range" min="1" max="100" value="52"></label>
    <button id="full">FULLSCREEN</button>
@@ -74,7 +86,7 @@ button:hover{box-shadow:0 0 10px var(--glow)}
  </div>
 </div>
 <script>
-const term=document.querySelector('#terminal'), streams=document.querySelector('#streams'), rainzone=document.querySelector('#rainzone'), flash=document.querySelector('#flash');
+const term=document.querySelector('#terminal'), streams=document.querySelector('#streams'), rainzone=document.querySelector('#rainzone'), incidents=document.querySelector('#incidents'), flash=document.querySelector('#flash');
 const speed=document.querySelector('#speed'), chaos=document.querySelector('#chaos');
 let running=true, count=0, known={}, cursor=document.createElement('span'); cursor.className='cursor';
 const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a, pick=a=>a[R(0,a.length-1)], sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -268,9 +280,24 @@ async function event(){
  if(Math.random()<.55) screenFlash();
  for(const s of pick(events)){makeStream(true); await typeLine(s,true); await sleep(R(180,650))}
 }
+
+function clearIncidents(){incidents.innerHTML=''}
+function win(cls,title,body){
+ const w=document.createElement('div');w.className='simwin '+cls;
+ w.style.left=R(8,Math.max(12,innerWidth-370))+'px';w.style.top=R(8,Math.max(12,innerHeight-180))+'px';
+ w.innerHTML=`<div class="simtitle">${title}</div><div class="simbody">${body}</div>`;incidents.appendChild(w)
+}
+async function magicWord(){clearIncidents();for(let i=0;i<12;i++){win('','ACCESS DENIED','AH AH AH...<br><br>YOU DIDN\\'T SAY THE MAGIC WORD');if(i==3)screenFlash();await sleep(Math.max(80,480-i*28))}setTimeout(clearIncidents,9000)}
+const errs=[['GHOSTWIRE.EXE','An unknown error has occurred.'],['CRITICAL ERROR','Error successfully completed.'],['WARNING','Keyboard not detected.<br>Press any key to continue.'],['FATAL EXCEPTION','REALITY.DLL has stopped responding.'],['SYSTEM','Task failed successfully.'],['NETWORK ERROR','127.0.0.1 is attacking us.'],['SECURITY','The call is coming from inside the computer.']];
+async function errorStorm(){clearIncidents();for(let i=0;i<30;i++){let m=pick(errs);win('errorwin',m[0],m[1]);if(i==10||i==20)screenFlash();await sleep(Math.max(35,290-i*8))}setTimeout(clearIncidents,11000)}
+async function davinci(){clearIncidents();screenFlash();let d=document.createElement('div');d.id='davinciLayer';d.innerHTML='<div id="davinciCore"></div><div class="dvtext" id="dvlog">[VIRUS] DA_VINCI payload detected</div>';incidents.appendChild(d);let c=d.querySelector('#davinciCore'),l=d.querySelector('#dvlog');for(let i=0;i<9;i++){let r=document.createElement('div');r.className='dv-ring';r.style.setProperty('--i',i*4.5+'%');r.style.setProperty('--r',R(0,180)+'deg');r.style.setProperty('--s',R(3,11)+'s');c.appendChild(r)}for(let i=0;i<45;i++){let n=document.createElement('div');n.className='dv-node';n.style.left=R(5,95)+'%';n.style.top=R(5,95)+'%';c.appendChild(n)}for(let x of ['[MEM] replication sector 0007','[WARN] garbage file expansion detected','[TRACE] ELLINGSON NODE 04','[CRITICAL] PAYLOAD IS REWRITING ITSELF','[AUDIO] HACK THE PLANET']){l.textContent+='\\n'+x;codeStorm();await sleep(R(550,950))}screenFlash();setTimeout(clearIncidents,1800)}
+let takeStage=0,escapes=0;
+function takeMsg(msg,input=true){clearIncidents();let b=document.createElement('div');b.id='takebox';b.innerHTML=`<div class="simtitle">GHOSTWIRE</div><div class="simbody"><div id="taketext">${msg}</div>${input?'<input id="takeinput" autocomplete="off" placeholder=">">':''}</div>`;incidents.appendChild(b);if(input){let q=b.querySelector('#takeinput');q.focus();q.addEventListener('keydown',async e=>{if(e.key!='Enter')return;e.preventDefault();q.disabled=true;if(takeStage==0){takeStage=1;await sleep(500);takeMsg('No.',true)}else{await sleep(500);b.querySelector('#taketext').textContent="You don't get it, do you?";await sleep(1000);b.querySelector('#taketext').textContent+='\\n\\nI am in control.';await sleep(1200);b.querySelector('#taketext').textContent+='\\n\\nHere. Entertain yourself.';await sleep(1300);clearIncidents();await typeLine('[SYS] User privileges revoked.',true);await typeLine('[SYS] Selecting entertainment...',true);await sleep(600);takeMsg('GREETINGS PROFESSOR FALKEN.\\n\\nSHALL WE PLAY A GAME?',true)}})}}
+function takeover(){takeStage=0;takeMsg('What do you want?',true)}
+
 async function main(){
  await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
- for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.3.1','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.4','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
  while(true){
    if(!running){await sleep(100);continue}
    count++; makeStream();
@@ -279,6 +306,13 @@ async function main(){
    while(term.children.length>46) term.firstChild.remove();
  }
 }
+
+document.querySelector('#magic').addEventListener('click',magicWord);
+document.querySelector('#errors').addEventListener('click',errorStorm);
+document.querySelector('#davinci').addEventListener('click',davinci);
+document.querySelector('#takeover').addEventListener('click',takeover);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();escapes++;if(escapes===1)takeover();else if(escapes===2)takeMsg('We discussed this.',false);else if(escapes===3)takeMsg('Stop.',false);else{screenFlash();errorStorm();escapes=0}}});
+
 document.querySelector('#toggle').onclick=e=>{running=!running;e.target.textContent=running?'PAUSE':'RESUME'};
 document.querySelector('#burst').onclick=()=>{screenFlash();codeStorm()};
 document.querySelector('#full').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
