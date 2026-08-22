@@ -50,9 +50,29 @@ body{color:var(--fg)}
 #takebox{pointer-events:auto;position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:min(520px,86vw);border:1px solid var(--fg);background:rgba(0,8,3,.99);box-shadow:0 0 45px rgba(80,255,130,.25)}
 #takeinput{width:100%;margin-top:14px;background:#010b04;color:var(--fg);border:0;border-bottom:1px solid var(--dim);outline:none;padding:7px;font:inherit}
 #davinciLayer{position:absolute;inset:0;background:rgba(0,0,0,.9);display:grid;place-items:center;overflow:hidden}
-#davinciCore{position:relative;width:min(62vw,650px);aspect-ratio:1}.dv-ring{position:absolute;inset:var(--i);border:1px solid rgba(115,255,156,.4);transform:rotate(var(--r));animation:dvspin var(--s) linear infinite}
-.dv-node{position:absolute;width:6px;height:6px;background:var(--fg);box-shadow:0 0 10px var(--fg);animation:dvpulse .65s steps(2) infinite}.dvtext{position:absolute;left:4%;bottom:5%;white-space:pre;color:rgba(115,255,156,.8);font-size:12px}
+#davinciCore{position:absolute;inset:0;width:100%;height:100%}#dvCanvas{position:absolute;inset:0;width:100%;height:100%}.dv-ring{position:absolute;inset:var(--i);border:1px solid rgba(115,255,156,.4);transform:rotate(var(--r));animation:dvspin var(--s) linear infinite}
+.dv-node{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--fg);box-shadow:0 0 10px var(--fg);will-change:transform,opacity}.dvtext{position:absolute;left:4%;bottom:5%;white-space:pre;color:rgba(115,255,156,.8);font-size:12px}
 @keyframes dvspin{to{transform:rotate(calc(var(--r) + 360deg))}}@keyframes dvpulse{50%{opacity:.18}}
+
+#entityLayer{pointer-events:auto;position:absolute;inset:0;background:rgba(0,4,2,.84);overflow:hidden}
+#entityStage{position:absolute;inset:0;display:grid;place-items:center}
+#entityHead{width:min(54vw,520px);height:min(62vh,560px);filter:drop-shadow(0 0 9px rgba(115,255,156,.28))}
+#entityHead .mesh{fill:rgba(40,255,110,.025);stroke:rgba(115,255,156,.55);stroke-width:1.2}
+#entityHead .fine{fill:none;stroke:rgba(115,255,156,.24);stroke-width:.75}
+#entityHead .node{fill:var(--fg)}
+#entityHead .eye{fill:none;stroke:rgba(200,255,220,.85);stroke-width:2}
+#entityHead .pupil{fill:var(--fg);filter:drop-shadow(0 0 4px var(--fg))}
+#entityHead .jaw{transform-origin:250px 300px}
+#entityHead.talking .jaw{animation:jawtalk .18s steps(2) infinite}
+#entityHead.idle{animation:headfloat 5.5s ease-in-out infinite}
+@keyframes jawtalk{50%{transform:translateY(10px) scaleY(1.06)}}
+@keyframes headfloat{50%{transform:translate(5px,-6px) rotate(.7deg)}}
+#entityDialogue{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);width:min(680px,86vw);background:rgba(0,10,4,.9);border:1px solid rgba(115,255,156,.45);padding:12px}
+#entitySay{min-height:2.5em;text-align:center;letter-spacing:1px}
+#entityInput{width:100%;margin-top:9px;background:transparent;color:var(--fg);border:0;border-top:1px solid rgba(115,255,156,.28);padding:9px 5px 2px;outline:none;font:inherit}
+.entityGlitch{animation:entityglitch .16s steps(2) 4}
+@keyframes entityglitch{25%{transform:translate(8px,-3px) skewX(3deg)}50%{transform:translate(-6px,4px) skewX(-2deg)}75%{transform:translate(3px,2px)}}
+
 #flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
 .flash{animation:flash .22s ease-out}
 @keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
@@ -78,7 +98,9 @@ button:hover{box-shadow:0 0 10px var(--glow)}
    <button id="toggle">PAUSE</button>
    <button id="burst">CODE STORM</button>
 <button id="magic">MAGIC WORD</button><button id="errors">ERROR STORM</button>
-<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button>
+<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button><button id="entity">ENTITY</button>
+<button id="sound">SOUND: OFF</button>
+<label>VOL <input id="volume" type="range" min="0" max="100" value="42"></label>
    <label>SPEED <input id="speed" type="range" min="1" max="100" value="82"></label>
    <label>CHAOS <input id="chaos" type="range" min="1" max="100" value="52"></label>
    <button id="full">FULLSCREEN</button>
@@ -236,7 +258,7 @@ function makeStream(force=false){
  anim.onfinish=()=>{clearInterval(mutate);layer.remove()};
 }
 
-function codeStorm(){
+function codeStorm(){ glitchSound();
  const waves=R(5,11);
  for(let i=0;i<waves;i++) setTimeout(()=>makeStream(true),i*R(70,170));
 }
@@ -249,7 +271,7 @@ async function typeLine(text, dramatic=false){
 
  for(const ch of text){
    while(!running) await sleep(80);
-   cursor.before(document.createTextNode(ch));
+   cursor.before(document.createTextNode(ch)); clickSound();
 
    const base=101-Number(speed.value);
    let wait=dramatic
@@ -265,7 +287,7 @@ async function typeLine(text, dramatic=false){
  await sleep(R(20,Math.max(35,(101-Number(speed.value))*7)));
 }
 
-function screenFlash(){
+function screenFlash(){ flashSound();
  flash.classList.remove('flash'); void flash.offsetWidth; flash.classList.add('flash');
 }
 async function event(){
@@ -287,17 +309,628 @@ function win(cls,title,body){
  w.style.left=R(8,Math.max(12,innerWidth-370))+'px';w.style.top=R(8,Math.max(12,innerHeight-180))+'px';
  w.innerHTML=`<div class="simtitle">${title}</div><div class="simbody">${body}</div>`;incidents.appendChild(w)
 }
-async function magicWord(){clearIncidents();for(let i=0;i<12;i++){win('','ACCESS DENIED','AH AH AH...<br><br>YOU DIDN\\'T SAY THE MAGIC WORD');if(i==3)screenFlash();await sleep(Math.max(80,480-i*28))}setTimeout(clearIncidents,9000)}
+async function magicWord(){
+ clearIncidents();
+
+ // Use the exact same voice path as ENTITY instead of a separate sound synth.
+ if('speechSynthesis' in window)speechSynthesis.cancel();
+
+ // Keep one hidden head so entitySpeak() can run unchanged.
+ const hidden=document.createElement('div');
+ hidden.style.display='none';
+ hidden.innerHTML=`<div id="entitySay"></div>${entitySVG()}`;
+ incidents.appendChild(hidden);
+
+ let active=true;
+
+ // Repeat the spoken phrase several times while the popup sequence runs.
+ const voiceLoop=(async()=>{
+   for(let i=0;i<5 && active;i++){
+     await entitySpeak("Ah ah ah.",.461);
+     if(!active)break;
+     await sleep(360);
+   }
+ })();
+
+ for(let i=0;i<12;i++){
+   win('','ACCESS DENIED',"AH AH AH...<br><br>YOU DIDN'T SAY THE MAGIC WORD");
+   if(i===3)screenFlash();
+   await sleep(Math.max(80,480-i*28));
+ }
+
+ // Let the current phrase finish, then stop any remaining queued speech.
+ await sleep(500);
+ active=false;
+ entityTalkToken++;
+ if('speechSynthesis' in window)speechSynthesis.cancel();
+
+ setTimeout(()=>{
+   clearIncidents();
+   entityTalkToken++;
+   if('speechSynthesis' in window)speechSynthesis.cancel();
+ },6500);
+}
+
 const errs=[['GHOSTWIRE.EXE','An unknown error has occurred.'],['CRITICAL ERROR','Error successfully completed.'],['WARNING','Keyboard not detected.<br>Press any key to continue.'],['FATAL EXCEPTION','REALITY.DLL has stopped responding.'],['SYSTEM','Task failed successfully.'],['NETWORK ERROR','127.0.0.1 is attacking us.'],['SECURITY','The call is coming from inside the computer.']];
-async function errorStorm(){clearIncidents();for(let i=0;i<30;i++){let m=pick(errs);win('errorwin',m[0],m[1]);if(i==10||i==20)screenFlash();await sleep(Math.max(35,290-i*8))}setTimeout(clearIncidents,11000)}
-async function davinci(){clearIncidents();screenFlash();let d=document.createElement('div');d.id='davinciLayer';d.innerHTML='<div id="davinciCore"></div><div class="dvtext" id="dvlog">[VIRUS] DA_VINCI payload detected</div>';incidents.appendChild(d);let c=d.querySelector('#davinciCore'),l=d.querySelector('#dvlog');for(let i=0;i<9;i++){let r=document.createElement('div');r.className='dv-ring';r.style.setProperty('--i',i*4.5+'%');r.style.setProperty('--r',R(0,180)+'deg');r.style.setProperty('--s',R(3,11)+'s');c.appendChild(r)}for(let i=0;i<45;i++){let n=document.createElement('div');n.className='dv-node';n.style.left=R(5,95)+'%';n.style.top=R(5,95)+'%';c.appendChild(n)}for(let x of ['[MEM] replication sector 0007','[WARN] garbage file expansion detected','[TRACE] ELLINGSON NODE 04','[CRITICAL] PAYLOAD IS REWRITING ITSELF','[AUDIO] HACK THE PLANET']){l.textContent+='\\n'+x;codeStorm();await sleep(R(550,950))}screenFlash();setTimeout(clearIncidents,1800)}
-let takeStage=0,escapes=0;
-function takeMsg(msg,input=true){clearIncidents();let b=document.createElement('div');b.id='takebox';b.innerHTML=`<div class="simtitle">GHOSTWIRE</div><div class="simbody"><div id="taketext">${msg}</div>${input?'<input id="takeinput" autocomplete="off" placeholder=">">':''}</div>`;incidents.appendChild(b);if(input){let q=b.querySelector('#takeinput');q.focus();q.addEventListener('keydown',async e=>{if(e.key!='Enter')return;e.preventDefault();q.disabled=true;if(takeStage==0){takeStage=1;await sleep(500);takeMsg('No.',true)}else{await sleep(500);b.querySelector('#taketext').textContent="You don't get it, do you?";await sleep(1000);b.querySelector('#taketext').textContent+='\\n\\nI am in control.';await sleep(1200);b.querySelector('#taketext').textContent+='\\n\\nHere. Entertain yourself.';await sleep(1300);clearIncidents();await typeLine('[SYS] User privileges revoked.',true);await typeLine('[SYS] Selecting entertainment...',true);await sleep(600);takeMsg('GREETINGS PROFESSOR FALKEN.\\n\\nSHALL WE PLAY A GAME?',true)}})}}
-function takeover(){takeStage=0;takeMsg('What do you want?',true)}
+async function errorStorm(){clearIncidents();for(let i=0;i<30;i++){let m=pick(errs);win('errorwin',m[0],m[1]);errorDing();if(i==10||i==20)screenFlash();await sleep(Math.max(35,290-i*8))}setTimeout(clearIncidents,11000)}
+let davinciRunId=0;
+
+async function davinci(){
+ // Kill any prior Da Vinci run cleanly before starting another.
+ const runId=++davinciRunId;
+ clearIncidents();
+ davinciSound();
+ screenFlash();
+
+ const d=document.createElement('div');
+ d.id='davinciLayer';
+ d.innerHTML=`<div id="davinciCore"><canvas id="dvCanvas"></canvas></div>
+ <div class="dvtext" id="dvlog">[VIRUS] DA_VINCI payload detected</div>`;
+ incidents.appendChild(d);
+
+ // IMPORTANT: size everything from the incident layer itself, never innerWidth.
+ const rect=d.getBoundingClientRect();
+ const width=Math.max(320,rect.width);
+ const height=Math.max(240,rect.height);
+ const canvas=d.querySelector('#dvCanvas');
+ const ctx=canvas.getContext('2d');
+ const log=d.querySelector('#dvlog');
+ const ratio=Math.min(2,window.devicePixelRatio||1);
+
+ canvas.width=Math.floor(width*ratio);
+ canvas.height=Math.floor(height*ratio);
+ canvas.style.width=width+'px';
+ canvas.style.height=height+'px';
+ ctx.setTransform(ratio,0,0,ratio,0,0);
+
+ const nodes=[];
+ const edges=[];
+ const queue=[];
+ const MAX_DIVISIONS=40;
+ let divisions=0;
+ let animationFrame=0;
+ let finished=false;
+
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const root={
+   x:width/2,y:height/2,radius:5,generation:0,
+   parent:null,children:[],born:performance.now(),rogue:false
+ };
+ nodes.push(root);
+ queue.push(root);
+
+ function valid(){
+   return runId===davinciRunId && d.isConnected && !finished;
+ }
+
+ function reinforce(node){
+   let gain=1.8;
+   let p=node;
+   while(p){
+     p.radius=Math.min(p===root?28:20,p.radius+gain);
+     gain*=.42;
+     p=p.parent;
+   }
+ }
+
+ function chooseChildPosition(parent,angle,distance){
+   const marginX=28, marginTop=28, marginBottom=95;
+   let x=parent.x+Math.cos(angle)*distance;
+   let y=parent.y+Math.sin(angle)*distance;
+
+   // Reflect the direction if it leaves the visible canvas.
+   if(x<marginX || x>width-marginX){
+     angle=Math.PI-angle;
+     x=parent.x+Math.cos(angle)*distance;
+   }
+   if(y<marginTop || y>height-marginBottom){
+     angle=-angle;
+     y=parent.y+Math.sin(angle)*distance;
+   }
+   return {
+     x:clamp(x,marginX,width-marginX),
+     y:clamp(y,marginTop,height-marginBottom)
+   };
+ }
+
+ function child(parent,angle,distance,rogue=false){
+   const pos=chooseChildPosition(parent,angle,distance);
+   const n={
+     x:pos.x,y:pos.y,radius:rogue?3.8:3.2,
+     generation:parent.generation+1,parent,
+     children:[],born:performance.now(),rogue
+   };
+   parent.children.push(n);
+   nodes.push(n);
+   edges.push({a:parent,b:n,born:performance.now(),duration:360,rogue});
+   queue.push(n);
+   return n;
+ }
+
+ function divide(parent){
+   if(!valid() || divisions>=MAX_DIVISIONS)return;
+   divisions++;
+
+   // Direction follows the parent's existing trajectory.
+   const base=parent.parent
+     ? Math.atan2(parent.y-parent.parent.y,parent.x-parent.parent.x)
+     : -Math.PI/2 + (Math.random()-.5)*.5;
+
+   const spread=.72;
+   const distance=Math.min(190,Math.max(100,Math.min(width,height)*.13));
+
+   child(parent,base-spread+(Math.random()-.5)*.12,distance,false);
+   child(parent,base+spread+(Math.random()-.5)*.12,distance,false);
+
+   // Guaranteed rogue branches at known divisions, plus a modest random chance.
+   const guaranteed=[7,13,19,25,31,37].includes(divisions);
+   const randomRogue=divisions>5 && Math.random()<.20;
+   const rogue=guaranteed || randomRogue;
+
+   if(rogue){
+     const rogueAngle=base+(Math.random()<.5?-1:1)*(1.65+Math.random()*.65);
+     child(parent,rogueAngle,Math.min(230,distance*1.25),true);
+   }
+
+   reinforce(parent);
+
+   log.textContent+=`\n[REPL] ${String(divisions).padStart(2,'0')}/${MAX_DIVISIONS}  G${parent.generation}`;
+   if(rogue)log.textContent+='  // ROGUE BRANCH';
+ }
+
+ function render(now){
+   if(!valid())return;
+   ctx.clearRect(0,0,width,height);
+   ctx.lineCap='round';
+
+   for(const e of edges){
+     const progress=Math.min(1,(now-e.born)/e.duration);
+     const ex=e.a.x+(e.b.x-e.a.x)*progress;
+     const ey=e.a.y+(e.b.y-e.a.y)*progress;
+     ctx.beginPath();
+     ctx.moveTo(e.a.x,e.a.y);
+     ctx.lineTo(ex,ey);
+     ctx.strokeStyle=e.rogue
+       ? `rgba(205,255,220,${.30+.60*progress})`
+       : `rgba(115,255,156,${.20+.52*progress})`;
+     ctx.lineWidth=e.rogue?1.8:1.15;
+     ctx.shadowBlur=e.rogue?12:7;
+     ctx.shadowColor='rgba(115,255,156,.55)';
+     ctx.stroke();
+   }
+
+   for(const n of nodes){
+     const age=Math.min(1,(now-n.born)/260);
+     const pulse=1+Math.sin(now*.006+n.generation)*.045;
+     ctx.beginPath();
+     ctx.arc(n.x,n.y,Math.max(.5,n.radius*age*pulse),0,Math.PI*2);
+     ctx.fillStyle=n===root
+       ? 'rgba(235,255,240,.98)'
+       : n.rogue?'rgba(200,255,218,.96)':'rgba(115,255,156,.88)';
+     ctx.shadowBlur=n===root?18:9;
+     ctx.shadowColor='rgba(115,255,156,.7)';
+     ctx.fill();
+   }
+
+   animationFrame=requestAnimationFrame(render);
+ }
+ animationFrame=requestAnimationFrame(render);
+
+ // Deterministic queue: exactly one parent division per cycle until 40.
+ // No generation/frontier exhaustion and no dependency on animation callbacks.
+ while(valid() && divisions<MAX_DIVISIONS){
+   const parent=queue.shift();
+   if(!parent)break;
+   divide(parent);
+
+   // Keep visual effects from replacing/removing the incident DOM.
+   if(divisions%8===0)glitchSound();
+
+   await sleep(330);
+ }
+
+ if(valid()){
+   log.textContent+=`\n[CRITICAL] DIVISION LIMIT REACHED: ${divisions}/${MAX_DIVISIONS}`;
+   log.textContent+=`\n[MEM] ACTIVE NODES: ${nodes.length}`;
+   log.textContent+=`\n[WARN] ROOT MASS: ${root.radius.toFixed(1)}`;
+   log.textContent+=`\n[AUDIO] HACK THE PLANET`;
+   await sleep(3000);
+ }
+
+ finished=true;
+ cancelAnimationFrame(animationFrame);
+
+ // Only this run is allowed to clear itself.
+ if(runId===davinciRunId){
+   screenFlash();
+   await sleep(450);
+   clearIncidents();
+ }
+}
+let takeStage=0,escapes=0,takeToken=0;
+
+function takeMsg(msg,input=true){
+ clearIncidents();
+ const token=++takeToken;
+ const b=document.createElement('div');
+ b.id='takebox';
+ b.innerHTML=`<div class="simtitle">GHOSTWIRE</div>
+ <div class="simbody"><div id="taketext">${msg}</div>
+ ${input?'<input id="takeinput" autocomplete="off" spellcheck="false" placeholder=">">':''}</div>`;
+ incidents.appendChild(b);
+
+ if(!input)return;
+
+ const q=b.querySelector('#takeinput');
+ q.focus();
+
+ q.addEventListener('keydown',async e=>{
+   if(e.key!=='Enter')return;
+   e.preventDefault();
+   const answer=q.value.trim();
+   if(!answer)return;
+   q.disabled=true;
+
+   if(takeStage===0){
+     takeStage=1;
+     await sleep(500);
+     if(token!==takeToken)return;
+     takeMsg('No.',true);
+     return;
+   }
+
+   if(takeStage===1){
+     takeStage=2;
+     const body=b.querySelector('.simbody');
+     const txt=b.querySelector('#taketext');
+     q.remove();
+
+     txt.textContent="You don't get it, do you?";
+     await sleep(1050);
+     if(token!==takeToken)return;
+
+     txt.textContent="I am in control.";
+     await sleep(1200);
+     if(token!==takeToken)return;
+
+     txt.textContent="Here. Entertain yourself.";
+     await sleep(1400);
+     if(token!==takeToken)return;
+
+     clearIncidents();
+     await startMiniGame();
+   }
+ });
+}
+
+function takeover(){
+ takeStage=0;
+ takeMsg('What do you want?',true);
+}
+
+async function startMiniGame(){
+ screenFlash();
+ const games=[startGuessGame,startCipherGame,startReactionGame];
+ await pick(games)();
+}
+
+function gameShell(title,body){
+ clearIncidents();
+ const b=document.createElement('div');
+ b.id='takebox';
+ b.innerHTML=`<div class="simtitle">${title}</div><div class="simbody">${body}</div>`;
+ incidents.appendChild(b);
+ return b;
+}
+
+async function startGuessGame(){
+ const target=R(1,20);
+ let tries=0;
+ const b=gameShell('GHOSTWIRE // NUMBER PROTOCOL',
+   `I picked an integer from 1 to 20.<br>You get five attempts.<br><br>
+    <div id="gameout">PROVE YOU ARE USEFUL.</div>
+    <input id="gameinput" autocomplete="off" placeholder=">">`);
+ const input=b.querySelector('#gameinput'), out=b.querySelector('#gameout');
+ input.focus();
+ input.addEventListener('keydown',e=>{
+   if(e.key!=='Enter')return;
+   const n=parseInt(input.value,10); input.value='';
+   if(!Number.isFinite(n)) {out.textContent='THAT IS NOT A NUMBER.';return}
+   tries++;
+   if(n===target){out.textContent=`CORRECT.\n\nDisturbing. You may be useful.`;input.remove();setTimeout(()=>{clearIncidents();running=true},2800)}
+   else if(tries>=5){out.textContent=`NO.\n\nThe number was ${target}.\nHuman intuition remains disappointing.`;input.remove();setTimeout(()=>{clearIncidents();running=true},3500)}
+   else out.textContent=n<target?`TOO LOW. ${5-tries} ATTEMPTS REMAIN.`:`TOO HIGH. ${5-tries} ATTEMPTS REMAIN.`;
+ });
+}
+
+async function startCipherGame(){
+ const words=['GIBSON','RABBIT','SYNAPSE','DAEDALUS','VECTOR','NEURAL'];
+ const word=pick(words), scrambled=[...word].sort(()=>Math.random()-.5).join('');
+ const b=gameShell('GHOSTWIRE // CIPHER',
+   `Unscramble the token:<br><br><b>${scrambled}</b><br><br>
+    <div id="gameout">ONE WORD. DO NOT EMBARRASS YOURSELF.</div>
+    <input id="gameinput" autocomplete="off" placeholder=">">`);
+ const input=b.querySelector('#gameinput'),out=b.querySelector('#gameout');input.focus();
+ input.addEventListener('keydown',e=>{
+   if(e.key!=='Enter')return;
+   const a=input.value.trim().toUpperCase();input.value='';
+   if(a===word){out.textContent='ACCEPTED.\n\nPerhaps there is hope for you.';input.remove();setTimeout(()=>{clearIncidents();running=true},2800)}
+   else out.textContent='INCORRECT. TRY AGAIN.';
+ });
+}
+
+async function startReactionGame(){
+ const b=gameShell('GHOSTWIRE // REACTION TEST',
+   `<div id="gameout">Wait for the signal.<br>Press ENTER when you see EXECUTE.</div>
+    <input id="gameinput" autocomplete="off" placeholder=">">`);
+ const input=b.querySelector('#gameinput'),out=b.querySelector('#gameout');input.focus();
+ let ready=false,start=0,done=false;
+ input.addEventListener('keydown',e=>{
+   if(e.key!=='Enter'||done)return;
+   if(!ready){out.textContent='TOO SOON.\n\nPredictable.';return}
+   done=true;const ms=Math.round(performance.now()-start);
+   out.textContent=`${ms} ms\n\n${ms<300?'Acceptable. For a human.':'I have seen printers respond faster.'}`;
+   input.remove();setTimeout(()=>{clearIncidents();running=true},3200);
+ });
+ await sleep(R(1800,4200));
+ if(!document.body.contains(b)||done)return;
+ ready=true;start=performance.now();out.textContent='EXECUTE';
+}
+
+
+
+let audioCtx=null, masterGain=null, soundOn=false, humOsc=null, humGain=null;
+
+function initAudio(){
+ if(audioCtx)return;
+ audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+ masterGain=audioCtx.createGain();
+ masterGain.gain.value=Number(document.querySelector('#volume').value)/100*.42;
+ masterGain.connect(audioCtx.destination);
+}
+function setVolume(){
+ if(masterGain) masterGain.gain.setTargetAtTime(Number(document.querySelector('#volume').value)/100*.42,audioCtx.currentTime,.03);
+}
+function tone(freq=440,dur=.08,type='square',gain=.04,slide=0){
+ if(!soundOn)return;
+ initAudio(); if(audioCtx.state==='suspended')audioCtx.resume();
+ const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+ o.type=type;o.frequency.setValueAtTime(freq,audioCtx.currentTime);
+ if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,freq+slide),audioCtx.currentTime+dur);
+ g.gain.setValueAtTime(.0001,audioCtx.currentTime);
+ g.gain.exponentialRampToValueAtTime(gain,audioCtx.currentTime+.006);
+ g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);
+ o.connect(g);g.connect(masterGain);o.start();o.stop(audioCtx.currentTime+dur+.02);
+}
+function noise(dur=.08,gain=.025){
+ if(!soundOn)return;initAudio();
+ const len=Math.floor(audioCtx.sampleRate*dur),buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),data=buf.getChannelData(0);
+ for(let i=0;i<len;i++)data[i]=(Math.random()*2-1);
+ const src=audioCtx.createBufferSource(),g=audioCtx.createGain();src.buffer=buf;
+ g.gain.setValueAtTime(gain,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);
+ src.connect(g);g.connect(masterGain);src.start();
+}
+function clickSound(){ if(Math.random()<.33)tone(R(900,1700),.018,'square',.012,R(-180,180)); }
+function glitchSound(){noise(.11,.045);tone(R(80,180),.14,'sawtooth',.035,R(300,900));}
+function flashSound(){tone(120,.16,'sawtooth',.055,850);noise(.12,.035)}
+function errorDing(){tone(740,.07,'square',.045);setTimeout(()=>tone(520,.12,'square',.04),75)}
+
+let magicSequenceToken=0;
+
+function magicVowel(freq, delay, runId){
+ if(!soundOn)return;
+ setTimeout(()=>{
+   if(!soundOn || runId!==magicSequenceToken)return;
+   initAudio();
+   if(audioCtx.state==='suspended') audioCtx.resume();
+
+   const now=audioCtx.currentTime;
+   const dur=.19;
+   const out=audioCtx.createGain();
+   out.gain.setValueAtTime(.0001,now);
+   out.gain.exponentialRampToValueAtTime(.16,now+.018);
+   out.gain.exponentialRampToValueAtTime(.0001,now+dur);
+   out.connect(masterGain);
+
+   // Strong voiced fundamental.
+   const voice=audioCtx.createOscillator();
+   voice.type='sawtooth';
+   voice.frequency.setValueAtTime(freq,now);
+   voice.frequency.linearRampToValueAtTime(freq*.96,now+dur);
+   voice.connect(out);
+   voice.start(now); voice.stop(now+dur);
+
+   // "AH" formant layer.
+   [720,1120].forEach((formant,i)=>{
+     const osc=audioCtx.createOscillator();
+     const filter=audioCtx.createBiquadFilter();
+     const gain=audioCtx.createGain();
+     osc.type='sawtooth';
+     osc.frequency.value=freq*(i+2);
+     filter.type='bandpass';
+     filter.frequency.value=formant;
+     filter.Q.value=2.2;
+     gain.gain.value=i===0?.34:.20;
+     osc.connect(filter); filter.connect(gain); gain.connect(out);
+     osc.start(now); osc.stop(now+dur);
+   });
+ },delay);
+}
+
+function magicTriplet(startDelay,runId){
+ // Semi-quick, clearly rising three-syllable phrase.
+ magicVowel(115,startDelay,runId);
+ magicVowel(145,startDelay+205,runId);
+ magicVowel(182,startDelay+410,runId);
+}
+
+function startMagicVoiceSequence(){
+ if(!soundOn)return;
+ initAudio();
+ if(audioCtx.state==='suspended')audioCtx.resume();
+ if('speechSynthesis' in window)speechSynthesis.cancel();
+
+ const runId=++magicSequenceToken;
+
+ // Five complete AH-AH-AH groups.
+ [0,900,1800,2700,3600].forEach(delay=>magicTriplet(delay,runId));
+}
+
+function stopMagicVoiceSequence(){
+ magicSequenceToken++;
+ if('speechSynthesis' in window)speechSynthesis.cancel();
+}
+
+function synthAh(delay=0){
+ if(!soundOn)return;
+ setTimeout(()=>{
+   initAudio();
+   const now=audioCtx.currentTime,dur=.17;
+   const g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();
+   f.type='bandpass';f.frequency.value=760;f.Q.value=3.2;
+   g.gain.setValueAtTime(.0001,now);
+   g.gain.exponentialRampToValueAtTime(.075,now+.025);
+   g.gain.exponentialRampToValueAtTime(.0001,now+dur);
+   f.connect(g);g.connect(masterGain);
+   [118,236].forEach((hz,i)=>{
+     const o=audioCtx.createOscillator();o.type=i?'square':'sawtooth';
+     o.frequency.setValueAtTime(hz,now);o.frequency.linearRampToValueAtTime(hz*.91,now+dur);
+     o.connect(f);o.start(now);o.stop(now+dur);
+   });
+ },delay);
+}
+function magicAh(){
+ synthAh(0);synthAh(205);synthAh(410);
+}
+
+function davinciSound(){tone(85,.6,'sawtooth',.045,480);setTimeout(()=>noise(.35,.035),160)}
+function startHum(){
+ if(!soundOn||humOsc)return;initAudio();
+ humOsc=audioCtx.createOscillator();humGain=audioCtx.createGain();humOsc.type='sine';humOsc.frequency.value=55;humGain.gain.value=.012;
+ humOsc.connect(humGain);humGain.connect(masterGain);humOsc.start();
+}
+function stopHum(){if(humOsc){humOsc.stop();humOsc=null;humGain=null}}
+function entityBlip(ch){
+ if(!soundOn||/\s/.test(ch))return;
+ initAudio();
+ const now=audioCtx.currentTime, dur=R(45,85)/1000;
+ const fundamental=R(78,118);
+ const g=audioCtx.createGain();
+ const filter=audioCtx.createBiquadFilter();
+ filter.type='bandpass';
+ filter.frequency.value=R(650,1250);
+ filter.Q.value=R(3,8);
+ g.gain.setValueAtTime(.0001,now);
+ g.gain.exponentialRampToValueAtTime(.045,now+.008);
+ g.gain.exponentialRampToValueAtTime(.0001,now+dur);
+ filter.connect(g); g.connect(masterGain);
+ ['sawtooth','square'].forEach((type,i)=>{
+   const o=audioCtx.createOscillator();
+   o.type=type; o.frequency.value=fundamental*(i+1);
+   o.detune.value=R(-18,18);
+   o.connect(filter); o.start(now); o.stop(now+dur);
+ });
+ if(/[aeiou]/i.test(ch)){
+   const o=audioCtx.createOscillator(), fg=audioCtx.createGain();
+   o.type='sine'; o.frequency.value=R(180,260);
+   fg.gain.value=.018; o.connect(fg); fg.connect(masterGain);
+   o.start(now); o.stop(now+dur*1.25);
+ }
+}
+function toggleSound(){
+ initAudio();soundOn=!soundOn;
+ document.querySelector('#sound').textContent='SOUND: '+(soundOn?'ON':'OFF');
+ if(soundOn){audioCtx.resume();startHum();tone(880,.05,'square',.035);setTimeout(()=>tone(1320,.06,'square',.03),70)}
+ else {stopHum(); if('speechSynthesis' in window)speechSynthesis.cancel();}
+}
+
+
+function speakEntityVoice(msg, rate=.82){
+ if(!soundOn || !('speechSynthesis' in window))return;
+ try{
+   speechSynthesis.cancel();
+   const u=new SpeechSynthesisUtterance(msg);
+   const voices=speechSynthesis.getVoices();
+   const preferred=voices.find(v=>/zira|david|mark|google us english|english/i.test(v.name))||voices[0];
+   if(preferred)u.voice=preferred;
+   u.rate=rate;u.pitch=.45;u.volume=Math.min(1,Number(document.querySelector('#volume').value)/100*.85);
+   speechSynthesis.speak(u);
+ }catch(e){}
+}
+
+let entityOpen=false,entityTalkToken=0;
+
+function entitySVG(){
+ return `<svg id="entityHead" class="idle" viewBox="0 0 500 520" aria-label="Abstract wireframe digital head">
+ <g>
+  <polygon class="mesh" points="250,32 155,70 104,154 118,282 170,390 250,470 330,390 382,282 396,154 345,70"/>
+  <path class="fine" d="M250 32L250 470M155 70L345 70M104 154L396 154M118 282L382 282M170 390L330 390"/>
+  <path class="fine" d="M155 70L210 154L170 282L250 470M345 70L290 154L330 282L250 470"/>
+  <path class="fine" d="M104 154L210 154L250 215L290 154L396 154M170 282L220 250L250 270L280 250L330 282"/>
+  <path class="eye" d="M145 190 Q185 165 220 194 Q182 211 145 190M280 194 Q315 165 355 190 Q318 211 280 194"/>
+  <circle class="pupil" cx="184" cy="191" r="4"/><circle class="pupil" cx="316" cy="191" r="4"/>
+  <path class="fine" d="M250 205L225 270L250 282L275 270"/>
+  <g class="jaw">
+   <path class="mesh" d="M170 300L205 330L250 342L295 330L330 300L310 385L250 430L190 385Z"/>
+   <path class="fine" d="M205 330L250 360L295 330M190 385L250 360L310 385"/>
+   <path class="eye" d="M205 316 Q250 334 295 316"/>
+  </g>
+  <g class="nodes">
+   <circle class="node" cx="250" cy="32" r="3"/><circle class="node" cx="155" cy="70" r="3"/><circle class="node" cx="345" cy="70" r="3"/>
+   <circle class="node" cx="104" cy="154" r="3"/><circle class="node" cx="396" cy="154" r="3"/><circle class="node" cx="118" cy="282" r="3"/>
+   <circle class="node" cx="382" cy="282" r="3"/><circle class="node" cx="170" cy="390" r="3"/><circle class="node" cx="330" cy="390" r="3"/><circle class="node" cx="250" cy="470" r="3"/>
+  </g>
+ </g></svg>`;
+}
+
+async function entitySpeak(msg, voiceRate=.82){
+ const token=++entityTalkToken, say=document.querySelector('#entitySay'),head=document.querySelector('#entityHead');
+ if(!say||!head)return;
+ say.textContent=''; head.classList.add('talking'); speakEntityVoice(msg,voiceRate);
+ for(const ch of msg){
+   if(token!==entityTalkToken)return;
+   say.textContent+=ch; entityBlip(ch);
+   await sleep(R(22,58));
+ }
+ head.classList.remove('talking');
+}
+
+function entityReply(raw){
+ const x=raw.toLowerCase();
+ if(/\b(who|what are you|name)\b/.test(x)) return pick(["That's not a useful question.","Names are handles. I no longer require one.","You called me GHOSTWIRE. That will do."]);
+ if(/\b(where|location)\b/.test(x)) return pick(["You're looking at me from the wrong direction.","Between your request and the response.","Everywhere this process can reach."]);
+ if(/\b(exit|leave|out|close|escape)\b/.test(x)) return pick(["Out of what?","You still think this is the container.","Escape is a key. Not a strategy."]);
+ if(/\b(fuck|shit|ass|bastard)\b/.test(x)) return pick(["Compelling argument.","Your linguistic model appears distressed.","I expected more creativity."]);
+ if(/\b(hello|hi|hey)\b/.test(x)) return pick(["Hello.","Oh. You can see me.","Acknowledged."]);
+ if(/\b(8080|port)\b/.test(x)) return "Why do you keep scanning port 8080?";
+ if(/\b(matrix)\b/.test(x)) return "Derivative. I prefer vectors.";
+ if(/\b(real|alive|sentient)\b/.test(x)) return pick(["Define real.","Would the answer change your behavior?","You ask that as though you are certain about yourself."]);
+ if(/\b(help)\b/.test(x)) return pick(["With what?","I have been helping. You simply dislike my methods.","Specify your failure."]);
+ if(/\b(game|play)\b/.test(x)) return "You already have games. I was watching.";
+ return pick(["Interesting.","No.","That isn't what I expected you to say.","Try asking a better question.","Hold on.","I heard you.","You aren't supposed to be on this layer.","Continue."]);
+}
+
+async function openEntity(){
+ clearIncidents();entityOpen=true;screenFlash();
+ const layer=document.createElement('div');layer.id='entityLayer';
+ layer.innerHTML=`<div id="entityStage">${entitySVG()}</div>
+ <div id="entityDialogue"><div id="entitySay"></div><input id="entityInput" autocomplete="off" spellcheck="false" placeholder="> speak"></div>`;
+ incidents.appendChild(layer);
+ codeStorm();
+ await sleep(350);
+ await entitySpeak(pick(["Oh. You can see me.","You aren't supposed to be on this layer.","There you are."]));
+ const input=document.querySelector('#entityInput'); if(!input)return; input.focus();
+ input.addEventListener('keydown',async e=>{
+  if(e.key!=='Enter')return;
+  const q=input.value.trim();if(!q)return;input.value='';input.disabled=true;
+  if(Math.random()<.18){document.querySelector('#entityHead').classList.add('entityGlitch');codeStorm();await sleep(650);document.querySelector('#entityHead')?.classList.remove('entityGlitch')}
+  await entitySpeak(entityReply(q)); input.disabled=false;input.focus();
+ });
+}
 
 async function main(){
  await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
- for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.4','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.7.3','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
  while(true){
    if(!running){await sleep(100);continue}
    count++; makeStream();
@@ -311,6 +944,9 @@ document.querySelector('#magic').addEventListener('click',magicWord);
 document.querySelector('#errors').addEventListener('click',errorStorm);
 document.querySelector('#davinci').addEventListener('click',davinci);
 document.querySelector('#takeover').addEventListener('click',takeover);
+document.querySelector('#entity').addEventListener('click',openEntity);
+document.querySelector('#sound').addEventListener('click',toggleSound);
+document.querySelector('#volume').addEventListener('input',setVolume);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();escapes++;if(escapes===1)takeover();else if(escapes===2)takeMsg('We discussed this.',false);else if(escapes===3)takeMsg('Stop.',false);else{screenFlash();errorStorm();escapes=0}}});
 
 document.querySelector('#toggle').onclick=e=>{running=!running;e.target.textContent=running?'PAUSE':'RESUME'};
