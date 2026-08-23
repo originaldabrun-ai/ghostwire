@@ -73,6 +73,24 @@ body{color:var(--fg)}
 .entityGlitch{animation:entityglitch .16s steps(2) 4}
 @keyframes entityglitch{25%{transform:translate(8px,-3px) skewX(3deg)}50%{transform:translate(-6px,4px) skewX(-2deg)}75%{transform:translate(3px,2px)}}
 
+
+#defenderBox{position:absolute;right:14px;bottom:14px;z-index:9;width:220px;border:1px solid rgba(205,255,220,.55);background:rgba(0,12,5,.88);padding:8px;font-size:11px;display:none;box-shadow:0 0 16px rgba(115,255,156,.14)}
+#defenderBox.active{display:block}
+#defenderBox .defTitle{font-weight:bold;letter-spacing:1px;margin-bottom:5px}
+#defenderBox .defPulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#dfffe8;box-shadow:0 0 8px #dfffe8;animation:defpulse 1.1s steps(2) infinite}
+@keyframes defpulse{50%{opacity:.22}}
+#whitehatLayer{pointer-events:auto;position:absolute;inset:0;background:#010603;z-index:30;overflow:hidden}
+#whitehatHud{position:absolute;left:12px;right:12px;top:8px;z-index:2;display:flex;justify-content:space-between;font-size:12px;letter-spacing:1px;text-shadow:0 0 8px currentColor}
+#whitehatGrid{position:absolute;inset:36px 10px 12px 10px;display:grid;align-content:center;justify-content:center;overflow:hidden;user-select:none}
+.whcell{display:flex;align-items:center;justify-content:center;font-family:Consolas,"Courier New",monospace;color:rgba(80,145,98,.42);font-size:15px;line-height:1}
+.whcell.borderhack{color:#ff9b35;text-shadow:0 0 7px rgba(255,145,35,.75);font-weight:bold}
+.whcell.borderhack.phase2{color:#ffb15a}
+.whcell.target{color:#ff3b3b;text-shadow:0 0 8px #ff2222;font-weight:bold}
+.whcell.snake{color:#eaffef;text-shadow:0 0 8px rgba(220,255,230,.9);font-weight:bold}
+.whcell.head{background:rgba(210,255,225,.12);outline:1px solid rgba(220,255,230,.65)}
+.whcell.hacked{color:#fff;text-shadow:0 0 7px rgba(255,255,255,.8)}
+#whitehatMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;text-align:center;background:rgba(0,8,3,.92);border:1px solid rgba(220,255,230,.5);padding:18px 24px;display:none;white-space:pre-line}
+
 #flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
 .flash{animation:flash .22s ease-out}
 @keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
@@ -92,13 +110,14 @@ button:hover{box-shadow:0 0 10px var(--glow)}
  <div id="terminal"></div>
  <div id="rainzone"></div>
  <div id="streams"></div>
- <div id="incidents"></div><div id="flash"></div>
+ <div id="defenderBox"><div class="defTitle"><span class="defPulse"></span> GHOSTWIRE // WHITE HAT</div><div id="defStatus">ACTIVE DEFENSE</div><div id="defCount">INTRUSIONS BLOCKED: 0000</div></div>
+<div id="incidents"></div><div id="flash"></div>
  <div id="scanlines"></div><div id="vignette"></div>
  <div id="hud">
    <button id="toggle">PAUSE</button>
    <button id="burst">CODE STORM</button>
 <button id="magic">MAGIC WORD</button><button id="errors">ERROR STORM</button>
-<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button><button id="entity">ENTITY</button>
+<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button><button id="entity">ENTITY</button><button id="whitehat">WHITE HAT</button>
 <button id="sound">SOUND: OFF</button>
 <label>VOL <input id="volume" type="range" min="0" max="100" value="42"></label>
    <label>SPEED <input id="speed" type="range" min="1" max="100" value="82"></label>
@@ -610,7 +629,7 @@ function takeover(){
 
 async function startMiniGame(){
  screenFlash();
- const games=[startGuessGame,startCipherGame,startReactionGame];
+ const games=[startGuessGame,startCipherGame,startReactionGame,startWhiteHatGame];
  await pick(games)();
 }
 
@@ -678,6 +697,281 @@ async function startReactionGame(){
 }
 
 
+
+
+let whiteHatUnlocked=false,whiteHatBlocked=0,whiteHatRun=0;
+
+function updateDefender(){
+ const b=document.querySelector('#defenderBox');
+ if(!b)return;
+ if(whiteHatUnlocked)b.classList.add('active');
+ document.querySelector('#defCount').textContent='INTRUSIONS BLOCKED: '+String(whiteHatBlocked).padStart(4,'0');
+}
+
+function startDefenderActivity(){
+ if(!whiteHatUnlocked)return;
+ setInterval(()=>{
+   if(!whiteHatUnlocked)return;
+   if(Math.random()<.42){
+     whiteHatBlocked++;
+     updateDefender();
+     const st=document.querySelector('#defStatus');
+     if(st){
+       st.textContent=pick(['BLOCKED // PORT PROBE','DROPPED // MALFORMED PACKET','REJECTED // ROOT ESCALATION','NULL ROUTED // INTRUSION','ACTIVE DEFENSE']);
+       setTimeout(()=>{if(st)st.textContent='ACTIVE DEFENSE'},900);
+     }
+   }
+ },2600);
+}
+
+async function startWhiteHatGame(){
+ const run=++whiteHatRun;
+ clearIncidents();
+ screenFlash();
+
+ const layer=document.createElement('div');
+ layer.id='whitehatLayer';
+ layer.innerHTML=`<div id="whitehatHud"><span id="whLevel">WHITE HAT // LEVEL 1/10</span><span id="whScore">HOSTILE TOKENS: 0</span></div>
+ <div id="whitehatGrid"></div><div id="whitehatMsg"></div>`;
+ incidents.appendChild(layer);
+
+ const grid=document.querySelector('#whitehatGrid');
+ const hudLevel=document.querySelector('#whLevel');
+ const hudScore=document.querySelector('#whScore');
+ const msg=document.querySelector('#whitehatMsg');
+
+ // Use odd Unicode symbols that read as machine glyphs, not natural language.
+ const glyphs=['⌁','⌬','⍜','⎔','⏣','⟟','⟊','⋇','⋉','⌖','⍉','⍾','⎇','⏧','⟑','⟒','⌑','⌭','⍝','⋈','⎊','⌇','⟠','⏥','⌗','⍙','⎋','⋰','⟡','⌰'];
+ const hostile=['⍟','⌘','⎈','⟟','⌬','⏣','⍉','⌖'];
+
+ let level=1,cols=0,rows=0,cells=[],snake=[],dir={x:1,y:0},nextDir={x:1,y:0};
+ let targets=new Map(),hacked=new Set(),borderCorrupt=new Set(),borderPhase=false,timer=null,alive=true,tickMs=155;
+
+ function key(x,y){return x+','+y}
+ function rndCell(){
+   let p;
+   do{p={x:R(1,cols-2),y:R(1,rows-2)}}while(snake.some(n=>n.x===p.x&&n.y===p.y)||targets.has(key(p.x,p.y))||borderCorrupt.has(key(p.x,p.y)));
+   return p;
+ }
+ function buildGrid(){
+   const rect=grid.getBoundingClientRect();
+   cols=Math.max(24,Math.floor(rect.width/18));
+   rows=Math.max(16,Math.floor(rect.height/19));
+   grid.style.gridTemplateColumns=`repeat(${cols},18px)`;
+   grid.style.gridTemplateRows=`repeat(${rows},19px)`;
+   cells=[];
+   grid.innerHTML='';
+   for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+     const c=document.createElement('div');c.className='whcell';c.textContent=pick(glyphs);
+     grid.appendChild(c);cells.push(c);
+   }
+ }
+ function cellAt(x,y){return cells[y*cols+x]}
+ function redraw(){
+   for(let i=0;i<cells.length;i++){
+     const c=cells[i];c.className='whcell';
+     const x=i%cols,y=Math.floor(i/cols),k=key(x,y);
+     if(hacked.has(k)){c.classList.add('hacked');c.textContent=targets.get(k)?.glyph||c.dataset.hacked||'◇'}
+     else if(targets.has(k)){c.classList.add('target');c.textContent=targets.get(k).glyph}
+     else if(borderCorrupt.has(k)){
+       c.classList.add('borderhack');
+       // Flicker between the underlying machine glyph and a corrupted hack marker.
+       if(borderPhase){c.classList.add('phase2');c.textContent=pick(['⍟','⌘','⎈','⌬','⏣'])}
+     }
+   }
+   snake.forEach((n,i)=>{
+     const c=cellAt(n.x,n.y);if(!c)return;c.classList.add('snake');if(i===0)c.classList.add('head');c.textContent=i===0?'▣':'▪';
+   });
+ }
+ function buildCorruptBorder(){
+   borderCorrupt.clear();
+
+   // Corruption closes WRAP PORTALS in matched pairs. A dangerous cell on the
+   // left always has a dangerous partner on the right; top always matches bottom.
+   // Thus there is never a "bad" entry opposite a "good" exit.
+   const pct=level===1?0:(level===10?1:(level-1)/10);
+
+   const horizontal=[];
+   for(let x=0;x<cols;x++)horizontal.push(x);
+   const vertical=[];
+   for(let y=0;y<rows;y++)vertical.push(y);
+
+   // Deterministic spread around both axes so every run is readable.
+   const hCount=Math.floor(horizontal.length*pct);
+   const vCount=Math.floor(vertical.length*pct);
+
+   function distributedPick(arr,count,offset){
+     if(count<=0)return [];
+     const out=[],used=new Set(),step=arr.length/count;
+     for(let i=0;i<count;i++){
+       let idx=Math.floor((i*step+offset)%arr.length);
+       while(used.has(idx))idx=(idx+1)%arr.length;
+       used.add(idx);out.push(arr[idx]);
+     }
+     return out;
+   }
+
+   for(const x of distributedPick(horizontal,hCount,level*2.7)){
+     borderCorrupt.add(key(x,0));
+     borderCorrupt.add(key(x,rows-1));
+   }
+   for(const y of distributedPick(vertical,vCount,level*1.9)){
+     borderCorrupt.add(key(0,y));
+     borderCorrupt.add(key(cols-1,y));
+   }
+ }
+ function spawnTargets(){
+   targets.clear();hacked.clear();
+   const count=Math.min(Math.pow(2,level-1),Math.max(1,Math.floor(cols*rows*.32)));
+   for(let i=0;i<count;i++){
+     const p=rndCell(),glyph=pick(hostile);
+     targets.set(key(p.x,p.y),{...p,glyph});
+   }
+   hudScore.textContent='HOSTILE TOKENS: '+targets.size;
+ }
+ function show(text,ms=1100){
+   msg.textContent=text;msg.style.display='block';
+   return sleep(ms).then(()=>{if(msg)msg.style.display='none'});
+ }
+ async function beginLevel(){
+   if(run!==whiteHatRun)return;
+   clearInterval(timer);
+   buildGrid();
+   snake=[{x:Math.floor(cols/2),y:Math.floor(rows/2)}];
+   dir={x:1,y:0};nextDir={x:1,y:0};
+   tickMs=Math.max(62,155-(level-1)*9);
+   buildCorruptBorder();
+   spawnTargets();
+   hudLevel.textContent=`WHITE HAT // LEVEL ${level}/10 // PERIMETER CORRUPTION ${level===1?0:(level===10?100:(level-1)*10)}%`;
+   redraw();
+   await show(level===1?'TRACE HOSTILE TOKENS.\nARROWS / WASD TO ROUTE CURSOR.':`BLACK HAT HACKS BACK.\nLEVEL ${level}`,level===1?1700:1050);
+   if(run!==whiteHatRun)return;
+   timer=setInterval(step,tickMs);
+   if(window.whBorderTimer)clearInterval(window.whBorderTimer);
+   window.whBorderTimer=setInterval(()=>{borderPhase=!borderPhase;if(alive&&run===whiteHatRun)redraw()},260);
+ }
+ async function levelClear(){
+   clearInterval(timer);if(window.whBorderTimer)clearInterval(window.whBorderTimer);
+   if(level>=10){
+     alive=false;
+     await show('HOSTILE CONTROL CHANNEL SEVERED.\nWHITE HAT DEFENSE INSTALLED.',2200);
+     whiteHatUnlocked=true;whiteHatBlocked++;
+     updateDefender();startDefenderActivity();
+     if(soundOn)entitySpeak && 0;
+     clearIncidents();
+     return;
+   }
+   level++;
+   await show('COUNTER-INTRUSION DETECTED.\nTHE ATTACKER HACKS BACK.',1100);
+   beginLevel();
+ }
+ async function borderDeath(){
+   clearInterval(timer);
+   if(window.whBorderTimer)clearInterval(window.whBorderTimer);
+   alive=false;
+
+   // Initial impact pop.
+   if(soundOn){
+     noise(.09,.11);
+     tone(150,.12,'sawtooth',.10,700);
+     setTimeout(()=>tone(80,.22,'square',.08,300),55);
+   }
+
+   const head=snake[0];
+   const hc=cellAt(head.x,head.y);
+   if(hc){
+     hc.textContent='✹';
+     hc.style.color='#fff';
+     hc.style.textShadow='0 0 16px #fff,0 0 28px #ff8b2d';
+     hc.animate([
+       {transform:'scale(1)',opacity:1},
+       {transform:'scale(2.8)',opacity:1},
+       {transform:'scale(.2)',opacity:0}
+     ],{duration:260,easing:'ease-out'});
+   }
+
+   // Burn down the snake from head to tail like a fuse.
+   for(let i=0;i<snake.length;i++){
+     const n=snake[i],c=cellAt(n.x,n.y);
+     if(c){
+       c.textContent=pick(['✹','✦','※','⊛']);
+       c.style.color='#ffb04d';
+       c.style.textShadow='0 0 12px #ff7a22,0 0 20px #fff';
+       c.animate([
+         {transform:'scale(1)',opacity:1},
+         {transform:'scale(2.1) rotate(12deg)',opacity:1,offset:.45},
+         {transform:'scale(.05)',opacity:0}
+       ],{duration:300,easing:'ease-out',fill:'forwards'});
+     }
+     if(soundOn){
+       tone(R(180,420),.055,'square',.045,R(120,420));
+       noise(.035,.025);
+     }
+     await sleep(Math.max(32,105-i*2));
+   }
+
+   await sleep(260);
+   msg.style.display='block';
+   msg.textContent='PERIMETER BREACH.\nTRACE DESTROYED.\n\nPRESS ENTER TO RETRY // ESC TO ABORT';
+ }
+
+ function fail(){
+   clearInterval(timer);if(window.whBorderTimer)clearInterval(window.whBorderTimer);alive=false;
+   msg.style.display='block';
+   msg.textContent='TRACE COLLISION.\nWHITE HAT SESSION TERMINATED.\n\nPRESS ENTER TO RETRY // ESC TO ABORT';
+ }
+ function step(){
+   if(!alive||run!==whiteHatRun)return;
+   dir=nextDir;
+   const h=snake[0];
+   let nx=h.x+dir.x,ny=h.y+dir.y;
+
+   // The black hat progressively corrupts the perimeter. Crossing an uncorrupted
+   // edge still wraps; crossing a corrupted edge is a collision.
+   if(nx<0||nx>=cols||ny<0||ny>=rows){
+     // Identify the portal pair being crossed. Paired corruption guarantees
+     // both the departure and arrival perimeter cells have the same state.
+     let bx,by;
+     if(nx<0){bx=0;by=h.y}
+     else if(nx>=cols){bx=cols-1;by=h.y}
+     else if(ny<0){bx=h.x;by=0}
+     else {bx=h.x;by=rows-1}
+
+     if(borderCorrupt.has(key(bx,by))){borderDeath();return}
+     nx=(nx+cols)%cols;ny=(ny+rows)%rows;
+   }
+
+   if(snake.some(n=>n.x===nx&&n.y===ny)){fail();return}
+
+   const nk=key(nx,ny);
+   if(borderCorrupt.has(nk)){snake.unshift({x:nx,y:ny});redraw();borderDeath();return}
+   const target=targets.get(nk);
+   snake.unshift({x:nx,y:ny});
+
+   if(target && !hacked.has(nk)){
+     hacked.add(nk);
+     cellAt(nx,ny).dataset.hacked=target.glyph;
+     if(soundOn){tone(980+level*45,.07,'square',.05,260);setTimeout(()=>tone(1420+level*40,.06,'square',.035),55)}
+     // Eating a red hostile token grows the cursor by one.
+   }else snake.pop();
+
+   // Previously hacked characters remain permanently white for this level.
+   if(targets.size===hacked.size){redraw();levelClear();return}
+   redraw();
+ }
+ function handle(e){
+   if(run!==whiteHatRun)return;
+   const k=e.key.toLowerCase();
+   if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','enter'].includes(k))e.preventDefault();
+   if(!alive && k==='enter'){alive=true;level=1;beginLevel();return}
+   const map={arrowup:{x:0,y:-1},w:{x:0,y:-1},arrowdown:{x:0,y:1},s:{x:0,y:1},arrowleft:{x:-1,y:0},a:{x:-1,y:0},arrowright:{x:1,y:0},d:{x:1,y:0}};
+   const nd=map[k];if(!nd)return;
+   if(nd.x===-dir.x&&nd.y===-dir.y)return;
+   nextDir=nd;
+ }
+ document.addEventListener('keydown',handle);
+ await beginLevel();
+}
 
 let audioCtx=null, masterGain=null, soundOn=false, humOsc=null, humGain=null;
 
@@ -930,7 +1224,7 @@ async function openEntity(){
 
 async function main(){
  await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
- for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.7.3','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.8.2','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
  while(true){
    if(!running){await sleep(100);continue}
    count++; makeStream();
@@ -945,6 +1239,7 @@ document.querySelector('#errors').addEventListener('click',errorStorm);
 document.querySelector('#davinci').addEventListener('click',davinci);
 document.querySelector('#takeover').addEventListener('click',takeover);
 document.querySelector('#entity').addEventListener('click',openEntity);
+document.querySelector('#whitehat').addEventListener('click',startWhiteHatGame);
 document.querySelector('#sound').addEventListener('click',toggleSound);
 document.querySelector('#volume').addEventListener('input',setVolume);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();escapes++;if(escapes===1)takeover();else if(escapes===2)takeMsg('We discussed this.',false);else if(escapes===3)takeMsg('Stop.',false);else{screenFlash();errorStorm();escapes=0}}});
