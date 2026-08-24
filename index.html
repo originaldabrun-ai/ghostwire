@@ -96,6 +96,14 @@ body{color:var(--fg)}
 #packetCanvas{position:absolute;inset:0;width:100%;height:100%}
 #packetHud{position:absolute;left:12px;right:12px;top:9px;display:flex;justify-content:space-between;z-index:3;font-size:12px;letter-spacing:1px}
 #packetMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;text-align:center;background:rgba(0,8,3,.92);border:1px solid rgba(220,255,230,.5);padding:18px 24px;white-space:pre-line}
+#mobilePad{display:none;position:absolute;z-index:40;pointer-events:auto;touch-action:none}
+#mobilePad button{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#whitehatLayer #mobilePad{left:16px;bottom:18px;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px 58px;gap:4px}
+#whitehatLayer #mobilePad button{font:22px Consolas;background:rgba(0,18,7,.88);color:#eaffef;border:1px solid rgba(220,255,230,.55)}
+#packetTap{display:none;position:absolute;inset:0;z-index:2;touch-action:none;user-select:none;-webkit-user-select:none}
+#packetLayer #packetTap{display:block}
+#packetTouchHint{display:none;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:5;font-size:11px;opacity:.72;pointer-events:none}
+@media (pointer:coarse),(max-width:800px){#whitehatLayer #mobilePad{display:grid}#packetTouchHint{display:block}#whitehatGrid{inset:36px 6px 205px 6px}}
 #flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
 .flash{animation:flash .22s ease-out}
 @keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
@@ -712,10 +720,11 @@ async function startPacketRun(){
  const layer=document.createElement('div');layer.id='packetLayer';
  layer.innerHTML=`<canvas id="packetCanvas"></canvas>
  <div id="packetHud"><span>GHOSTWIRE // PACKET RUN</span><span><span id="packetPhase">BOOTSTRAP ROUTE</span> // <span id="packetScore">BYTES: 0000</span></span></div>
+ <div id="packetTap"></div><div id="packetTouchHint">TAP SCREEN = INJECT CLOCK PULSE</div>
  <div id="packetMsg">ROUTE THE PACKET
-SPACE = INJECT CLOCK PULSE
+SPACE / TAP = INJECT CLOCK PULSE
 
-PRESS SPACE</div>`;
+PRESS SPACE OR TAP</div>`;
  incidents.appendChild(layer);
 
  const canvas=layer.querySelector('#packetCanvas'),ctx=canvas.getContext('2d');
@@ -782,13 +791,19 @@ ROUTE COLLAPSED
 
 BYTES ROUTED: ${score}
 
-SPACE TO RETRY`}
+SPACE / TAP TO RETRY`}
  function reset(){
    packet={x:w*.22,y:h*.5,vy:0,r:8};gates=[];hostiles=[];keys=[];particles=[];score=0;gateIndex=0;spawn=0;speed=165;dead=false;started=false;
-   scoreEl.textContent='BYTES: 0000';updatePhase();msg.style.display='block';msg.textContent='ROUTE THE PACKET\nSPACE = INJECT CLOCK PULSE\n\nPRESS SPACE';
+   scoreEl.textContent='BYTES: 0000';updatePhase();msg.style.display='block';msg.textContent='ROUTE THE PACKET\nSPACE / TAP = INJECT CLOCK PULSE\n\nPRESS SPACE OR TAP';
  }
  function keydown(e){if(e.code!=='Space'||run!==packetRunId)return;e.preventDefault();if(dead){reset();return}flap()}
  document.addEventListener('keydown',keydown);
+ const tapSurface=layer.querySelector('#packetTap');
+ tapSurface.addEventListener('pointerdown',e=>{
+   if(run!==packetRunId)return;e.preventDefault();
+   if(dead){reset();return}flap();
+ },{passive:false});
+ tapSurface.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 
  function bg(){
    ctx.font='13px Consolas';ctx.textAlign='left';ctx.fillStyle='rgba(80,145,98,.20)';
@@ -922,7 +937,10 @@ async function startWhiteHatGame(){
  const layer=document.createElement('div');
  layer.id='whitehatLayer';
  layer.innerHTML=`<div id="whitehatHud"><span id="whLevel">WHITE HAT // LEVEL 1/10</span><span id="whScore">HOSTILE TOKENS: 0</span></div>
- <div id="whitehatGrid"></div><div id="whitehatMsg"></div>`;
+ <div id="whitehatGrid"></div><div id="whitehatMsg"></div>
+ <div id="mobilePad"><span></span><button data-dir="up">▲</button><span></span>
+ <button data-dir="left">◀</button><span></span><button data-dir="right">▶</button>
+ <span></span><button data-dir="down">▼</button><span></span></div>`;
  incidents.appendChild(layer);
 
  const grid=document.querySelector('#whitehatGrid');
@@ -1034,7 +1052,7 @@ async function startWhiteHatGame(){
    spawnTargets();
    hudLevel.textContent=`WHITE HAT // LEVEL ${level}/10 // PERIMETER CORRUPTION ${level===1?0:(level===10?100:(level-1)*10)}%`;
    redraw();
-   await show(level===1?'TRACE HOSTILE TOKENS.\nARROWS / WASD TO ROUTE CURSOR.':`BLACK HAT HACKS BACK.\nLEVEL ${level}`,level===1?1700:1050);
+   await show(level===1?'TRACE HOSTILE TOKENS.\nARROWS / WASD / TOUCH PAD TO ROUTE CURSOR.':`BLACK HAT HACKS BACK.\nLEVEL ${level}`,level===1?1700:1050);
    if(run!==whiteHatRun)return;
    timer=setInterval(step,tickMs);
    if(window.whBorderTimer)clearInterval(window.whBorderTimer);
@@ -1160,6 +1178,17 @@ async function startWhiteHatGame(){
    nextDir=nd;
  }
  document.addEventListener('keydown',handle);
+ const pad=layer.querySelector('#mobilePad');
+ const touchDirs={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+ pad.querySelectorAll('button[data-dir]').forEach(btn=>{
+   btn.addEventListener('pointerdown',e=>{
+     e.preventDefault();if(run!==whiteHatRun)return;
+     const nd=touchDirs[btn.dataset.dir];
+     if(nd.x===-dir.x&&nd.y===-dir.y)return;
+     nextDir=nd;
+   },{passive:false});
+ });
+ layer.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
  await beginLevel();
 }
 
@@ -1414,7 +1443,7 @@ async function openEntity(){
 
 async function main(){
  await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
- for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.10.1','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.10.3','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
  while(true){
    if(!running){await sleep(100);continue}
    count++; makeStream();
