@@ -91,6 +91,11 @@ body{color:var(--fg)}
 .whcell.hacked{color:#fff;text-shadow:0 0 7px rgba(255,255,255,.8)}
 #whitehatMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;text-align:center;background:rgba(0,8,3,.92);border:1px solid rgba(220,255,230,.5);padding:18px 24px;display:none;white-space:pre-line}
 
+
+#packetLayer{pointer-events:auto;position:absolute;inset:0;z-index:31;background:#010603;overflow:hidden}
+#packetCanvas{position:absolute;inset:0;width:100%;height:100%}
+#packetHud{position:absolute;left:12px;right:12px;top:9px;display:flex;justify-content:space-between;z-index:3;font-size:12px;letter-spacing:1px}
+#packetMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;text-align:center;background:rgba(0,8,3,.92);border:1px solid rgba(220,255,230,.5);padding:18px 24px;white-space:pre-line}
 #flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
 .flash{animation:flash .22s ease-out}
 @keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
@@ -117,7 +122,7 @@ button:hover{box-shadow:0 0 10px var(--glow)}
    <button id="toggle">PAUSE</button>
    <button id="burst">CODE STORM</button>
 <button id="magic">MAGIC WORD</button><button id="errors">ERROR STORM</button>
-<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button><button id="entity">ENTITY</button><button id="whitehat">WHITE HAT</button>
+<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button><button id="entity">ENTITY</button><button id="whitehat">WHITE HAT</button><button id="packetrun">PACKET RUN</button>
 <button id="sound">SOUND: OFF</button>
 <label>VOL <input id="volume" type="range" min="0" max="100" value="42"></label>
    <label>SPEED <input id="speed" type="range" min="1" max="100" value="82"></label>
@@ -629,7 +634,7 @@ function takeover(){
 
 async function startMiniGame(){
  screenFlash();
- const games=[startGuessGame,startCipherGame,startReactionGame,startWhiteHatGame];
+ const games=[startGuessGame,startCipherGame,startReactionGame,startWhiteHatGame,startPacketRun];
  await pick(games)();
 }
 
@@ -699,6 +704,191 @@ async function startReactionGame(){
 
 
 
+
+
+let packetRunId=0;
+async function startPacketRun(){
+ const run=++packetRunId;clearIncidents();screenFlash();
+ const layer=document.createElement('div');layer.id='packetLayer';
+ layer.innerHTML=`<canvas id="packetCanvas"></canvas>
+ <div id="packetHud"><span>GHOSTWIRE // PACKET RUN</span><span><span id="packetPhase">BOOTSTRAP ROUTE</span> // <span id="packetScore">BYTES: 0000</span></span></div>
+ <div id="packetMsg">ROUTE THE PACKET
+SPACE = INJECT CLOCK PULSE
+
+PRESS SPACE</div>`;
+ incidents.appendChild(layer);
+
+ const canvas=layer.querySelector('#packetCanvas'),ctx=canvas.getContext('2d');
+ const scoreEl=layer.querySelector('#packetScore'),phaseEl=layer.querySelector('#packetPhase'),msg=layer.querySelector('#packetMsg');
+ const ratio=Math.min(2,devicePixelRatio||1),w=layer.clientWidth,h=layer.clientHeight;
+ canvas.width=w*ratio;canvas.height=h*ratio;canvas.style.width=w+'px';canvas.style.height=h+'px';ctx.setTransform(ratio,0,0,ratio,0,0);
+
+ const glyphs=['⌁','⌬','⍜','⎔','⟟','⋇','⌖','⍉','⎇','⟑','⌑','⍝','⎊','⌇'];
+ let packet={x:w*.22,y:h*.5,vy:0,r:8},gates=[],hostiles=[],keys=[],particles=[];
+ let score=0,started=false,dead=false,last=performance.now(),spawn=0,speed=165,gateIndex=0,nextGateAt=0;
+ const gravity=620,pulseImpulse=-145,maxRise=-255,maxFall=285;
+
+ function phase(){
+   if(gateIndex<12)return 0;       // learn basic route
+   if(gateIndex<20)return 1;       // stationary hostile zones
+   if(gateIndex<28)return 2;       // moving hostile code
+   return 3;                       // activation-key firewalls
+ }
+ function updatePhase(){
+   const names=['BOOTSTRAP ROUTE','HOSTILE MEMORY','ACTIVE MALWARE','LOCKED FIREWALLS'];
+   phaseEl.textContent=names[phase()];
+ }
+ function corridorCenter(){
+   const lastGate=gates.length?gates[gates.length-1]:null;
+   return lastGate?(lastGate.top+lastGate.bottom)/2:packet.y;
+ }
+ function makeGate(){
+   gateIndex++;updatePhase();
+   const p=phase(),gap=p===0?215:p===1?205:p===2?195:190;
+   const margin=64,prev=corridorCenter(),maxShift=p===0?55:p===1?65:p===2?72:78;
+   let center=Math.max(margin+gap/2,Math.min(h-margin-gap/2,prev+R(-maxShift,maxShift)));
+   if(Math.random()<.3)center=center*.74+h*.5*.26;
+
+   const locked=p===3 && gateIndex%3===0;
+   const g={x:w+45,width:R(50,68),top:center-gap/2,bottom:center+gap/2,passed:false,glyph:pick(glyphs),locked,open:!locked,index:gateIndex};
+   gates.push(g);
+
+   // Locked firewalls get a white activation token BEFORE the wall.
+   if(locked){
+     const keyY=Math.max(72,Math.min(h-72,center+R(-65,65)));
+     keys.push({x:g.x-R(165,225),y:keyY,r:24,gate:g,collected:false,pulse:Math.random()*6});
+   }
+
+   // Zones between walls become increasingly occupied after firewall 12.
+   if(p>=1){
+     const count=p===1?R(1,2):p===2?R(1,3):R(2,3);
+     for(let i=0;i<count;i++){
+       let y=center+R(-150,150);
+       // Keep a broad lane around the intended corridor.
+       if(Math.abs(y-center)<55)y+=y<center?-75:75;
+       y=Math.max(65,Math.min(h-65,y));
+       hostiles.push({
+         x:w+R(95,270),y,baseY:y,r:R(13,19),glyph:pick(['⍟','⎈','⌬','⏣','⌖','⍉']),
+         moving:p>=2 && Math.random()<(p===2?.55:.75),
+         amp:R(25,70),rate:R(7,14)/10,phase:Math.random()*6.28
+       });
+     }
+   }
+ }
+ function burst(x,y){for(let i=0;i<20;i++)particles.push({x,y,vx:R(-180,180),vy:R(-180,180),life:1,g:pick(glyphs)});if(soundOn){noise(.08,.08);tone(110,.16,'sawtooth',.08,620)}}
+ function flap(){if(dead)return;if(!started){started=true;msg.style.display='none';last=performance.now()}packet.vy=Math.max(maxRise,packet.vy+pulseImpulse);if(soundOn)tone(520,.045,'square',.025,210)}
+ function kill(reason='PACKET LOSS'){if(dead)return;dead=true;burst(packet.x,packet.y);msg.style.display='block';msg.textContent=`${reason}
+ROUTE COLLAPSED
+
+BYTES ROUTED: ${score}
+
+SPACE TO RETRY`}
+ function reset(){
+   packet={x:w*.22,y:h*.5,vy:0,r:8};gates=[];hostiles=[];keys=[];particles=[];score=0;gateIndex=0;spawn=0;speed=165;dead=false;started=false;
+   scoreEl.textContent='BYTES: 0000';updatePhase();msg.style.display='block';msg.textContent='ROUTE THE PACKET\nSPACE = INJECT CLOCK PULSE\n\nPRESS SPACE';
+ }
+ function keydown(e){if(e.code!=='Space'||run!==packetRunId)return;e.preventDefault();if(dead){reset();return}flap()}
+ document.addEventListener('keydown',keydown);
+
+ function bg(){
+   ctx.font='13px Consolas';ctx.textAlign='left';ctx.fillStyle='rgba(80,145,98,.20)';
+   for(let y=48;y<h;y+=22)for(let x=8;x<w;x+=24)ctx.fillText(glyphs[((x+y*3)%glyphs.length)|0],x,y);
+ }
+ function frame(now){
+   if(run!==packetRunId||!layer.isConnected)return;
+   const dt=Math.min(.035,(now-last)/1000);last=now;ctx.clearRect(0,0,w,h);bg();
+
+   if(started&&!dead){
+     packet.vy=Math.min(maxFall,packet.vy+gravity*dt);packet.y+=packet.vy*dt;
+     spawn+=dt;
+     speed=165+Math.min(75,Math.floor(gateIndex/8)*12);
+     if(spawn>Math.max(1.35,1.72-Math.floor(gateIndex/10)*.08)){spawn=0;makeGate()}
+
+     for(const g of gates){
+       g.x-=speed*dt;
+       if(!g.passed&&g.x+g.width<packet.x){
+         g.passed=true;score++;scoreEl.textContent='BYTES: '+String(score).padStart(4,'0');
+         if(soundOn)tone(900,.035,'square',.02,180);
+       }
+       const hitX=packet.x+packet.r>g.x&&packet.x-packet.r<g.x+g.width;
+       if(hitX){
+         // A locked wall is completely solid until its activation token is collected.
+         if(g.locked&&!g.open){kill('FIREWALL LOCKED // ACTIVATION MISSED');break}
+         if(packet.y-packet.r<g.top||packet.y+packet.r>g.bottom){kill();break}
+       }
+     }
+     gates=gates.filter(g=>g.x+g.width>-25);
+
+     for(const k of keys){
+       k.x-=speed*dt;
+       if(!k.collected){
+         const dx=packet.x-k.x,dy=packet.y-k.y;
+         if(dx*dx+dy*dy<(packet.r+k.r+10)**2){
+           k.collected=true;k.gate.open=true;
+           if(soundOn){tone(680,.06,'square',.05,420);setTimeout(()=>tone(1220,.07,'square',.04),65)}
+         }
+       }
+     }
+     keys=keys.filter(k=>!k.collected&&k.x>-30);
+
+     for(const o of hostiles){
+       o.x-=speed*dt;
+       if(o.moving)o.y=o.baseY+Math.sin(now*.001*o.rate+o.phase)*o.amp;
+       const dx=packet.x-o.x,dy=packet.y-o.y;
+       if(dx*dx+dy*dy<(packet.r+o.r*.72)**2){kill('HOSTILE CODE COLLISION');break}
+     }
+     hostiles=hostiles.filter(o=>o.x+o.r>-25);
+     if(packet.y-packet.r<36||packet.y+packet.r>h)kill();
+   }
+
+   // Firewalls. Locked ones have NO visible opening until activated.
+   ctx.font='15px Consolas';ctx.textAlign='center';
+   for(const g of gates){
+     const sealed=g.locked&&!g.open;
+     ctx.fillStyle=sealed?'rgba(255,115,35,.92)':'rgba(255,75,60,.72)';
+     ctx.shadowBlur=sealed?12:7;ctx.shadowColor=sealed?'rgba(255,125,35,.85)':'rgba(255,55,40,.65)';
+     if(sealed){
+       for(let yy=42;yy<h;yy+=18)ctx.fillText(g.glyph,g.x+g.width/2,yy);
+       ctx.strokeStyle='rgba(255,125,35,.45)';ctx.strokeRect(g.x,36,g.width,h-36);
+     }else{
+       for(let yy=42;yy<g.top;yy+=18)ctx.fillText(g.glyph,g.x+g.width/2,yy);
+       for(let yy=g.bottom;yy<h;yy+=18)ctx.fillText(g.glyph,g.x+g.width/2,yy);
+       ctx.strokeStyle='rgba(255,85,55,.25)';ctx.strokeRect(g.x,36,g.width,g.top-36);ctx.strokeRect(g.x,g.bottom,g.width,h-g.bottom);
+     }
+   }
+
+   // White activation tokens pulse ahead of locked walls.
+   for(const k of keys){
+     const pulse=1+Math.sin(now*.009+k.pulse)*.25;
+     ctx.save();ctx.translate(k.x,k.y);ctx.scale(pulse,pulse);
+     ctx.strokeStyle='#fff';ctx.lineWidth=2.2;ctx.shadowBlur=22;ctx.shadowColor='#fff';
+     ctx.beginPath();ctx.arc(0,0,k.r,0,Math.PI*2);ctx.stroke();
+     ctx.beginPath();ctx.arc(0,0,k.r-7,0,Math.PI*2);ctx.stroke();
+     ctx.fillStyle='#fff';ctx.font='bold 22px Consolas';ctx.fillText('◇',0,7);
+     ctx.font='bold 10px Consolas';ctx.fillText('AUTH',0,k.r+15);ctx.restore();
+   }
+
+   // Hostile memory/code: stationary first, animated later.
+   for(const o of hostiles){
+     const flick=Math.sin(now*.012+o.phase)>0;
+     ctx.save();ctx.translate(o.x,o.y);ctx.textAlign='center';
+     ctx.font=`bold ${Math.round(o.r*1.4)}px Consolas`;
+     ctx.fillStyle=flick?'rgba(255,75,60,.95)':'rgba(255,145,45,.92)';
+     ctx.shadowBlur=14;ctx.shadowColor='rgba(255,55,35,.85)';
+     ctx.fillText(flick?o.glyph:'⌁',0,o.r*.4);
+     if(o.moving){ctx.font='8px Consolas';ctx.fillText('ACTIVE',0,o.r+9)}
+     ctx.restore();
+   }
+
+   ctx.shadowBlur=14;ctx.shadowColor='rgba(220,255,230,.9)';ctx.fillStyle='#eaffef';ctx.font='bold 18px Consolas';ctx.textAlign='center';
+   ctx.fillText('◈',packet.x,packet.y+6);ctx.font='10px Consolas';ctx.fillText('01',packet.x,packet.y+19);
+
+   for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.8;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle='#ff9b35';ctx.fillText(p.g,p.x,p.y)}
+   ctx.globalAlpha=1;particles=particles.filter(p=>p.life>0);ctx.shadowBlur=0;
+   requestAnimationFrame(frame);
+ }
+ requestAnimationFrame(frame);
+}
 let whiteHatUnlocked=false,whiteHatBlocked=0,whiteHatRun=0;
 
 function updateDefender(){
@@ -1224,7 +1414,7 @@ async function openEntity(){
 
 async function main(){
  await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
- for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.8.2','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.10.1','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
  while(true){
    if(!running){await sleep(100);continue}
    count++; makeStream();
@@ -1240,6 +1430,7 @@ document.querySelector('#davinci').addEventListener('click',davinci);
 document.querySelector('#takeover').addEventListener('click',takeover);
 document.querySelector('#entity').addEventListener('click',openEntity);
 document.querySelector('#whitehat').addEventListener('click',startWhiteHatGame);
+document.querySelector('#packetrun').addEventListener('click',startPacketRun);
 document.querySelector('#sound').addEventListener('click',toggleSound);
 document.querySelector('#volume').addEventListener('input',setVolume);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();escapes++;if(escapes===1)takeover();else if(escapes===2)takeMsg('We discussed this.',false);else if(escapes===3)takeMsg('Stop.',false);else{screenFlash();errorStorm();escapes=0}}});
