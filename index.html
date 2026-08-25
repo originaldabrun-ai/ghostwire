@@ -104,6 +104,28 @@ body{color:var(--fg)}
 #packetLayer #packetTap{display:block}
 #packetTouchHint{display:none;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:5;font-size:11px;opacity:.72;pointer-events:none}
 @media (pointer:coarse),(max-width:800px){#whitehatLayer #mobilePad{display:grid}#packetTouchHint{display:block}#whitehatGrid{inset:36px 6px 205px 6px}}
+#purgeLayer{pointer-events:auto;position:absolute;inset:0;z-index:32;background:#010603;overflow:hidden;touch-action:none;user-select:none}
+#purgeField{position:absolute;inset:38px 8px 10px;overflow:hidden}
+#purgeHud{position:absolute;left:12px;right:12px;top:8px;z-index:5;display:flex;justify-content:space-between;font-size:12px}
+.purgeGlyph{position:absolute;font:15px Consolas;color:rgba(80,145,98,.25);pointer-events:none}
+.purgeBug{position:absolute;z-index:3;display:grid;place-items:center;border:1px solid #ff493c;background:rgba(70,0,0,.25);box-shadow:0 0 18px rgba(255,45,35,.3);touch-action:none}
+.purgeBug .core{font:bold 24px Consolas;color:#ff4a3e;text-shadow:0 0 12px #ff3028;pointer-events:none}
+.purgeBug .arrow{position:absolute;font:bold 23px Consolas;color:#ff9a35;text-shadow:0 0 9px #ff7b22;pointer-events:none}
+.purgeBug.armed{outline:2px solid white}
+#purgeMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;text-align:center;background:rgba(0,8,3,.94);border:1px solid #bfe8c9;padding:18px 24px;white-space:pre-line}
+#purgeTrail{position:absolute;inset:0;pointer-events:none;z-index:4}
+
+.purgeBug.corruption{border:0!important;background:transparent!important;box-shadow:none!important;display:grid!important;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);place-items:center;animation:corruptFlicker .32s steps(1) infinite}
+.purgeBug.corruption .core{display:none}
+.purgeBug.corruption .corruptChar{font:bold 18px Consolas;color:#ff9a35;text-shadow:0 0 9px #ff7b22;pointer-events:none;animation:glyphSwap .44s steps(1) infinite}
+.purgeBug.corruption .corruptChar:nth-child(2n){animation-delay:.16s}.purgeBug.corruption .corruptChar:nth-child(3n){animation-delay:.28s}
+.purgeBug.corruption .arrow{left:50%!important;top:50%!important;transform:translate(-50%,-50%);font-size:27px;color:#fff;text-shadow:0 0 10px #fff}
+.purgeTaken{position:absolute;z-index:2;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);place-items:center;pointer-events:none;animation:takenPulse .7s ease-in-out infinite alternate}
+.purgeTaken span{font:bold 19px Consolas;color:#ff342c;text-shadow:0 0 13px #ff2018}
+@keyframes corruptFlicker{0%,49%{opacity:.55}50%,100%{opacity:1}}
+@keyframes glyphSwap{0%,49%{filter:brightness(.7);transform:scale(.92)}50%,100%{filter:brightness(1.35);transform:scale(1.08)}}
+@keyframes takenPulse{from{background:rgba(70,0,0,.05);filter:brightness(.72)}to{background:rgba(125,0,0,.18);filter:brightness(1.3)}}
+
 #flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
 .flash{animation:flash .22s ease-out}
 @keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
@@ -130,7 +152,7 @@ button:hover{box-shadow:0 0 10px var(--glow)}
    <button id="toggle">PAUSE</button>
    <button id="burst">CODE STORM</button>
 <button id="magic">MAGIC WORD</button><button id="errors">ERROR STORM</button>
-<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button><button id="entity">ENTITY</button><button id="whitehat">WHITE HAT</button><button id="packetrun">PACKET RUN</button>
+<button id="davinci">DAVINCI</button><button id="takeover">TAKEOVER</button><button id="entity">ENTITY</button><button id="whitehat">WHITE HAT</button><button id="packetrun">PACKET RUN</button><button id="purge">PURGE</button>
 <button id="sound">SOUND: OFF</button>
 <label>VOL <input id="volume" type="range" min="0" max="100" value="42"></label>
    <label>SPEED <input id="speed" type="range" min="1" max="100" value="82"></label>
@@ -642,7 +664,7 @@ function takeover(){
 
 async function startMiniGame(){
  screenFlash();
- const games=[startGuessGame,startCipherGame,startReactionGame,startWhiteHatGame,startPacketRun];
+ const games=[startGuessGame,startCipherGame,startReactionGame,startWhiteHatGame,startPacketRun,startPurgeGame];
  await pick(games)();
 }
 
@@ -713,6 +735,67 @@ async function startReactionGame(){
 
 
 
+
+
+let purgeRunId=0;
+async function startPurgeGame(){
+ const run=++purgeRunId;clearIncidents();screenFlash();
+ const layer=document.createElement('div');layer.id='purgeLayer';
+ layer.innerHTML=`<div id="purgeHud"><span>GHOSTWIRE // PURGE</span><span id="purgeStat">L01 // PURGED 000 // COMPROMISED 0%</span></div><div id="purgeField"></div><canvas id="purgeTrail"></canvas><div id="purgeMsg">CORRUPTED MEMORY DETECTED
+HIT THE INFECTION AND DRAG WITH ITS FLOW
+
+MOUSE / TOUCH
+
+TAP TO BEGIN</div>`;
+ incidents.appendChild(layer);
+ const field=layer.querySelector('#purgeField'),trail=layer.querySelector('#purgeTrail'),ctx=trail.getContext('2d'),stat=layer.querySelector('#purgeStat'),msg=layer.querySelector('#purgeMsg');
+ const ratio=Math.min(2,devicePixelRatio||1),w=layer.clientWidth,h=layer.clientHeight;
+ trail.width=w*ratio;trail.height=h*ratio;trail.style.width=w+'px';trail.style.height=h+'px';ctx.setTransform(ratio,0,0,ratio,0,0);
+ const glyphs=['⌁','⌬','⍜','⎔','⟟','⋇','⌖','⍉','⎇','⟑','⌑','⍝','⎊','⌇'];
+ const dirs=[['→',1,0],['←',-1,0],['↓',0,1],['↑',0,-1],['↘',.707,.707],['↗',.707,-.707],['↙',-.707,.707],['↖',-.707,-.707]];
+ let active=false,level=1,purged=0,bugs=[],spawnTimer=null,gesture=null,trailPts=[],lost=false;
+ const TILE=82, zoneCols=Math.max(3,Math.floor(field.clientWidth/TILE)), zoneRows=Math.max(3,Math.floor(field.clientHeight/TILE)),taken=new Map();
+ function zk(c,r){return c+','+r}
+ function compromised(){return Math.round(taken.size/(zoneCols*zoneRows)*100)}
+ for(let y=8;y<field.clientHeight;y+=23)for(let x=8;x<field.clientWidth;x+=25){let g=document.createElement('span');g.className='purgeGlyph';g.style.left=x+'px';g.style.top=y+'px';g.textContent=pick(glyphs);field.appendChild(g)}
+ function diff(){return{life:Math.max(1100,2800-level*150),interval:Math.max(450,1300-level*70),max:Math.min(1+Math.floor(level/2),5),drag:34+level*3}}
+ function update(){stat.textContent=`L${String(level).padStart(2,'0')} // PURGED ${String(purged).padStart(3,'0')} // COMPROMISED ${compromised()}%`}
+ function remove(b,good){clearTimeout(b.timer);if(!b.el.isConnected)return;if(soundOn){tone(good?950:120,.08,'square',.05,good?400:600);noise(.05,.035)}b.el.animate([{transform:'scale(1)',opacity:1},{transform:`scale(${good?.2:1.8})`,opacity:0}],{duration:300}).onfinish=()=>b.el.remove();bugs=bugs.filter(x=>x!==b)}
+ function fail(b){
+  if(!active||!b.el.isConnected)return;clearTimeout(b.timer);
+  b.el.classList.remove('corruption');b.el.classList.add('purgeTaken');
+  b.el.querySelector('.arrow')?.remove();
+  b.el.querySelector('.core')?.remove();
+  if(!b.el.querySelector('.corruptChar'))b.el.innerHTML=Array.from({length:9},()=>`<span>${pick(['⍟','⎈','⌬','⏣','⌖','⍉'])}</span>`).join('');
+  else b.el.querySelectorAll('.corruptChar').forEach(x=>x.className='');
+  taken.set(zk(b.c,b.r),b.el);bugs=bugs.filter(x=>x!==b);
+  if(soundOn){noise(.11,.07);tone(95,.15,'sawtooth',.06,450)}
+  update();
+  if(taken.size>=zoneCols*zoneRows){
+   lost=true;active=false;clearInterval(spawnTimer);
+   msg.style.display='block';msg.textContent='SYSTEM COMPROMISED\nHOSTILE CODE OWNS 100% OF MEMORY\n\nTAP TO REBOOT PURGE';
+  }
+ } function spawn(replica=false){
+  if(!active||lost||run!==purgeRunId||bugs.length>=diff().max+(replica?1:0))return;
+  const free=[];
+  for(let r=0;r<zoneRows;r++)for(let c=0;c<zoneCols;c++)if(!taken.has(zk(c,r))&&!bugs.some(b=>b.c===c&&b.r===r))free.push({c,r});
+  if(!free.length)return;
+  const pos=pick(free),choices=level>=4?dirs:dirs.slice(0,4),d=pick(choices),size=TILE-12,el=document.createElement('div');
+  el.className='purgeBug corruption';el.style.width=size+'px';el.style.height=size+'px';el.style.left=(pos.c*TILE+8)+'px';el.style.top=(pos.r*TILE+8)+'px';
+  el.innerHTML=Array.from({length:9},()=>`<span class="corruptChar">${pick(['⍟','⎈','⌬','⏣','⌖','⍉'])}</span>`).join('')+`<span class="arrow">${d[0]}</span>`;
+  field.appendChild(el);const b={el,dx:d[1],dy:d[2],c:pos.c,r:pos.r};bugs.push(b);b.timer=setTimeout(()=>fail(b),diff().life)
+ } function success(b){purged++;if(purged%8===0&&level<10){level++;clearInterval(spawnTimer);spawnTimer=setInterval(()=>spawn(),diff().interval);screenFlash()}update();remove(b,true)}
+ function point(e){let r=layer.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+ layer.addEventListener('pointerdown',e=>{e.preventDefault();if(lost){
+  taken.forEach(el=>el.remove());taken.clear();bugs.forEach(b=>{clearTimeout(b.timer);b.el.remove()});bugs=[];lost=false;level=1;purged=0;
+  active=true;msg.style.display='none';update();spawn();clearInterval(spawnTimer);spawnTimer=setInterval(()=>spawn(),diff().interval);return
+ }
+ if(!active){active=true;msg.style.display='none';spawn();spawnTimer=setInterval(()=>spawn(),diff().interval);return}let el=e.target.closest?.('.purgeBug');if(!el)return;let b=bugs.find(x=>x.el===el);if(!b)return;el.setPointerCapture?.(e.pointerId);el.classList.add('armed');gesture={b,start:point(e),last:point(e),id:e.pointerId};trailPts=[gesture.start]},{passive:false});
+ layer.addEventListener('pointermove',e=>{if(!gesture||e.pointerId!==gesture.id)return;e.preventDefault();gesture.last=point(e);trailPts.push(gesture.last);if(trailPts.length>18)trailPts.shift()},{passive:false});
+ layer.addEventListener('pointerup',e=>{if(!gesture||e.pointerId!==gesture.id)return;e.preventDefault();let g=gesture;gesture=null;g.b.el?.classList.remove('armed');let dx=g.last.x-g.start.x,dy=g.last.y-g.start.y,len=Math.hypot(dx,dy);if(len<diff().drag){fail(g.b);return}let dot=(dx/len)*g.b.dx+(dy/len)*g.b.dy;if(dot>=.72)success(g.b);else fail(g.b)},{passive:false});
+ layer.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+ function animate(){if(run!==purgeRunId||!layer.isConnected)return;ctx.clearRect(0,0,w,h);if(trailPts.length>1){ctx.strokeStyle='white';ctx.lineWidth=2;ctx.shadowBlur=9;ctx.shadowColor='white';ctx.beginPath();ctx.moveTo(trailPts[0].x,trailPts[0].y);for(const p of trailPts.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();trailPts.shift()}requestAnimationFrame(animate)}requestAnimationFrame(animate)
+}
 
 let packetRunId=0;
 async function startPacketRun(){
@@ -1443,7 +1526,7 @@ async function openEntity(){
 
 async function main(){
  await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
- for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.10.3','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.12.0','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
  while(true){
    if(!running){await sleep(100);continue}
    count++; makeStream();
@@ -1460,6 +1543,7 @@ document.querySelector('#takeover').addEventListener('click',takeover);
 document.querySelector('#entity').addEventListener('click',openEntity);
 document.querySelector('#whitehat').addEventListener('click',startWhiteHatGame);
 document.querySelector('#packetrun').addEventListener('click',startPacketRun);
+document.querySelector('#purge').addEventListener('click',startPurgeGame);
 document.querySelector('#sound').addEventListener('click',toggleSound);
 document.querySelector('#volume').addEventListener('input',setVolume);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();escapes++;if(escapes===1)takeover();else if(escapes===2)takeMsg('We discussed this.',false);else if(escapes===3)takeMsg('Stop.',false);else{screenFlash();errorStorm();escapes=0}}});
