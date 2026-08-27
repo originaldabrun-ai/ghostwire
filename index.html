@@ -12,22 +12,32 @@ body{color:var(--fg)}
 #screen{position:fixed;inset:0;background:
  radial-gradient(circle at 50% 45%,rgba(18,60,30,.18),transparent 60%),
  linear-gradient(#010503,#000);overflow:hidden}
-#terminal{position:absolute;inset:0;padding:26px 30px 74px;overflow:hidden;white-space:pre-wrap;font-size:clamp(12px,1.35vw,18px);line-height:1.28;text-shadow:0 0 7px var(--glow);z-index:4}
+#terminal{position:absolute;inset:0;padding:26px 30px 132px;overflow:hidden;white-space:pre-wrap;font-size:clamp(12px,1.35vw,18px);line-height:1.28;text-shadow:0 0 7px var(--glow);z-index:4}
 .line{min-height:1.28em}.cursor{display:inline-block;width:.62em;height:1.05em;vertical-align:-.15em;background:var(--fg);box-shadow:0 0 10px var(--fg);animation:blink .82s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 #scanlines{pointer-events:none;position:absolute;inset:0;z-index:8;opacity:.18;background:repeating-linear-gradient(0deg,rgba(0,0,0,.0) 0,rgba(0,0,0,.0) 2px,rgba(0,0,0,.65) 3px,rgba(0,0,0,.65) 4px)}
 #vignette{pointer-events:none;position:absolute;inset:0;z-index:9;box-shadow:inset 0 0 150px #000}
 
+
+#machineLive{pointer-events:none;position:absolute;z-index:3;left:52%;top:9%;width:43%;height:34%;overflow:hidden;
+ opacity:.58;font-size:11px;line-height:1.12;color:rgba(105,255,155,.55);text-shadow:0 0 6px rgba(75,255,135,.34);
+ -webkit-mask-image:linear-gradient(to bottom,transparent,#000 10%,#000 88%,transparent);
+ mask-image:linear-gradient(to bottom,transparent,#000 10%,#000 88%,transparent)}
+.machineRow{height:1.15em;white-space:nowrap;overflow:hidden}
+.machineRow .addr{color:rgba(210,255,225,.72)}
+.machineRow .mut{display:inline-block;color:rgba(120,255,175,.72);animation:machinePulse .6s steps(2) infinite}
+@keyframes machinePulse{50%{opacity:.35;filter:brightness(1.5)}}
+
 #rainzone{
- pointer-events:none;position:absolute;z-index:2;overflow:hidden;
- width:34vw;height:38vh;opacity:.34;
+ pointer-events:none;position:absolute;z-index:3;overflow:hidden;
+ width:42vw;height:44vh;opacity:.52;
  -webkit-mask-image:radial-gradient(ellipse at center,#000 42%,transparent 88%);
  mask-image:radial-gradient(ellipse at center,#000 42%,transparent 88%);
  transition:left 2.4s ease,top 2.4s ease,width 2.4s ease,height 2.4s ease,opacity 1.2s ease;
 }
 .raincol{
  position:absolute;top:-130%;white-space:pre;font-size:11px;line-height:1.02;
- color:rgba(80,255,135,.30);text-shadow:0 0 5px rgba(70,255,130,.22);
+ color:rgba(95,255,145,.48);text-shadow:0 0 7px rgba(70,255,130,.38);
  writing-mode:vertical-rl;letter-spacing:2px;
  animation:rainfall var(--rdur) linear infinite;
 }
@@ -38,7 +48,7 @@ body{color:var(--fg)}
 }
 
 #streams{pointer-events:none;position:absolute;inset:0;z-index:5;overflow:hidden;mix-blend-mode:screen}
-.stream{position:absolute;left:0;top:0;transform-origin:0 50%;white-space:nowrap;font-size:11px;line-height:1;color:rgba(112,255,166,.20);text-shadow:0 0 5px rgba(75,255,135,.22);will-change:transform,opacity}
+.stream{position:absolute;left:0;top:0;transform-origin:0 50%;white-space:nowrap;font-size:11px;line-height:1;color:rgba(112,255,166,.30);text-shadow:0 0 6px rgba(75,255,135,.30);will-change:transform,opacity}
 .stream .head{color:rgba(210,255,225,.72);text-shadow:0 0 8px rgba(130,255,175,.55)}
 .stream .hot{color:rgba(130,255,180,.38)}
 .stream .dim{color:rgba(70,190,120,.13)}
@@ -126,9 +136,88 @@ body{color:var(--fg)}
 @keyframes glyphSwap{0%,49%{filter:brightness(.7);transform:scale(.92)}50%,100%{filter:brightness(1.35);transform:scale(1.08)}}
 @keyframes takenPulse{from{background:rgba(70,0,0,.05);filter:brightness(.72)}to{background:rgba(125,0,0,.18);filter:brightness(1.3)}}
 
+
+.purgeCell{position:absolute;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);place-items:center;pointer-events:none}
+.purgeCell span{font:bold 17px Consolas;color:rgba(95,255,145,.36);text-shadow:0 0 5px rgba(70,255,130,.25)}
+.purgeCell.underAttack span{visibility:hidden}
+.purgeCell.taken{
+ pointer-events:auto;
+ border:1px solid rgba(255,55,48,.92);
+ box-shadow:inset 0 0 12px rgba(255,45,35,.16),0 0 9px rgba(255,45,35,.38);
+ animation:takenPulse .72s ease-in-out infinite alternate
+}
+.purgeCell.taken span{color:#ff342c;text-shadow:0 0 13px #ff2018}
+.purgeCell.repairing{animation:repairFlash .5s ease-out}
+.purgeBug.corruption{z-index:4}
+@keyframes repairFlash{0%{background:rgba(255,255,255,.8);filter:brightness(2)}100%{background:transparent;filter:none}}
+
+
+
+
+.gameExit{position:absolute;right:12px;bottom:12px;z-index:60;pointer-events:auto;padding:7px 11px;
+ background:rgba(0,12,5,.9);color:#bfffd0;border:1px solid rgba(190,255,210,.55);font:12px Consolas,"Courier New",monospace;
+ letter-spacing:1px;box-shadow:0 0 10px rgba(90,255,145,.12);touch-action:manipulation}
+.gameExit:hover{background:rgba(8,35,16,.96);box-shadow:0 0 14px rgba(90,255,145,.32)}
+#purgeLayer.systemLost{background:#170000!important;color:#ff5550;transition:background .65s ease,color .65s ease}
+#purgeLayer.systemLost #purgeField{background:rgba(90,0,0,.14)}
+#purgeLayer.systemLost #purgeHud{color:#ff5a54;text-shadow:0 0 10px rgba(255,35,25,.75)}
+#purgeLayer.systemLost #purgeMsg{color:#ff706a;border-color:#ff3b35;background:rgba(32,0,0,.96);box-shadow:0 0 35px rgba(255,20,15,.25)}
+#purgeLayer.systemLost .purgeCell span{color:rgba(255,70,62,.62)!important;text-shadow:0 0 8px rgba(255,35,28,.75)!important}
+#purgeLayer.systemLost .gameExit{color:#ffb0aa;border-color:#ff5048;background:rgba(35,0,0,.94)}
+
+
+/* GLOBAL GHOSTWIRE hostile takeover state */
+body.ghostwireCompromised{
+ --fg:#ff514b;
+ --dim:#9b2825;
+ --glow:rgba(255,55,45,.38);
+ --danger:#ffb0aa;
+}
+body.ghostwireCompromised #screen{
+ background:
+  radial-gradient(circle at 50% 45%,rgba(105,8,8,.27),transparent 60%),
+  linear-gradient(#0b0101,#000);
+}
+body.ghostwireCompromised #terminal,
+body.ghostwireCompromised #hud,
+body.ghostwireCompromised #defenderBox{
+ color:var(--fg);
+}
+body.ghostwireCompromised #hud{
+ border-color:rgba(255,85,75,.28);
+ background:rgba(18,0,0,.76);
+}
+body.ghostwireCompromised button,
+body.ghostwireCompromised select{
+ background:#160202;
+ color:var(--fg);
+ border-color:var(--dim);
+}
+body.ghostwireCompromised .raincol{
+ color:rgba(255,70,65,.43);
+ text-shadow:0 0 7px rgba(255,35,30,.38);
+}
+body.ghostwireCompromised .raincol .rhead{color:rgba(255,205,200,.82);text-shadow:0 0 9px rgba(255,85,75,.65)}
+body.ghostwireCompromised .stream{color:rgba(255,85,78,.31);text-shadow:0 0 6px rgba(255,35,30,.34)}
+body.ghostwireCompromised .stream .head{color:rgba(255,210,205,.76);text-shadow:0 0 8px rgba(255,95,85,.58)}
+body.ghostwireCompromised #machineLive{color:rgba(255,90,82,.58);text-shadow:0 0 7px rgba(255,40,35,.4)}
+body.ghostwireCompromised .machineRow .addr{color:rgba(255,210,205,.76)}
+body.ghostwireCompromised .machineRow .mut{color:rgba(255,105,95,.76)}
+body.ghostwireCompromised #scanlines{opacity:.24}
+body.ghostwireCompromised #vignette{box-shadow:inset 0 0 180px #160000}
+
 #flash{pointer-events:none;position:absolute;inset:0;z-index:20;background:#caffdc;opacity:0}
 .flash{animation:flash .22s ease-out}
 @keyframes flash{0%{opacity:.0}15%{opacity:.72}45%{opacity:.16}100%{opacity:0}}
+
+#hud:before{
+ content:"";position:absolute;left:-1px;right:-1px;bottom:100%;height:34px;pointer-events:none;
+ background:linear-gradient(to bottom,transparent,rgba(0,10,4,.82));
+}
+body.ghostwireCompromised #hud:before{
+ background:linear-gradient(to bottom,transparent,rgba(18,0,0,.86));
+}
+
 #hud{position:absolute;left:18px;right:18px;bottom:14px;z-index:15;display:flex;align-items:center;gap:12px;padding:8px 11px;border:1px solid rgba(100,255,150,.22);background:rgba(0,10,4,.72);backdrop-filter:blur(4px);font-size:12px}
 button,select,input{accent-color:var(--fg);font:inherit}
 button,select{background:#031108;color:var(--fg);border:1px solid var(--dim);padding:5px 9px}
@@ -136,7 +225,7 @@ button:hover{box-shadow:0 0 10px var(--glow)}
 .spacer{flex:1}.status{color:#9bffb8}
 #boot{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:#000;color:var(--fg);font-size:20px;letter-spacing:3px;transition:opacity .8s}
 .small{opacity:.65;font-size:11px}
-@media(max-width:700px){#terminal{padding:18px 16px 94px;font-size:12px}#hud{flex-wrap:wrap}.spacer{display:none}}
+@media(max-width:700px){#terminal{padding:18px 16px 190px;font-size:12px}#hud{flex-wrap:wrap}.spacer{display:none}}
 </style>
 </head>
 <body>
@@ -144,6 +233,7 @@ button:hover{box-shadow:0 0 10px var(--glow)}
  <div id="boot">GHOSTWIRE // INITIALIZING<span class="cursor"></span></div>
  <div id="terminal"></div>
  <div id="rainzone"></div>
+ <div id="machineLive"></div>
  <div id="streams"></div>
  <div id="defenderBox"><div class="defTitle"><span class="defPulse"></span> GHOSTWIRE // WHITE HAT</div><div id="defStatus">ACTIVE DEFENSE</div><div id="defCount">INTRUSIONS BLOCKED: 0000</div></div>
 <div id="incidents"></div><div id="flash"></div>
@@ -180,6 +270,11 @@ const ordinary=[
  ()=>`Firewall confidence ${R(42,99)}% // firewall refuses to elaborate`,
  ()=>`Heartbeat age ${R(1,99)} // node refuses to identify itself`
 ];
+const machineOutput=[
+ ()=>`0x${R(0x1000,0xffff).toString(16).toUpperCase()} :: ${Array.from({length:R(7,13)},()=>R(0,255).toString(16).padStart(2,'0').toUpperCase()).join(' ')} // ${pick(['MEM','IRQ','DMA','MUX','SYNC'])}`,
+ ()=>`${pick(['RX','TX','PTR','BUS','KERNEL'])}[${R(0,31)}] ${Array.from({length:R(5,10)},()=>pick(['⌁','⌬','⍜','⎔','⟟','⌖','⍉'])+R(0,15).toString(16).toUpperCase()).join(' ')}`,
+ ()=>`STACK 0x${R(0x100000,0xffffff).toString(16).toUpperCase()} > ${Array.from({length:R(6,12)},()=>pick(['01','10','11','00'])).join('')} :: VECTOR/${R(0,255)}`
+];
 const nerd=[
  ()=>`Gibson signature detected at ${ip()} // Crash Override nearby`,
  ()=>`Acid Burn handshake accepted // HACK THE PLANET flag set`,
@@ -208,7 +303,7 @@ const nerd=[
 const rainGlyphs="01ABCDEF∆λΞΨЖฬアカサタナハマヤラワｱｶｻﾀﾅﾊﾏﾔﾗﾜ<>[]{}:/\\|*+=-";
 function buildRain(){
  rainzone.innerHTML='';
- const cols=R(12,24);
+ const cols=R(18,32);
  for(let i=0;i<cols;i++){
    const c=document.createElement('div'); c.className='raincol';
    c.style.left=(i*(100/cols)+Math.random()*2)+'%';
@@ -231,7 +326,7 @@ function moveRain(){
    rainzone.style.left=q.l+'vw'; rainzone.style.top=q.t+'vh';
    rainzone.style.width=q.w+'vw'; rainzone.style.height=q.h+'vh';
    buildRain();
-   rainzone.style.opacity=String(R(22,42)/100);
+   rainzone.style.opacity=String(R(38,62)/100);
  },700);
 }
 
@@ -241,6 +336,48 @@ const codeTokens=[
  '0xDEAD','0xBEEF','0110','1011','ACK','NUL','RX','TX','SEED','FORK','STACK',
  'GLASS','WIRE','SIGNAL','PHASE','VECTOR','SHARD','KERNEL','TRACE','SYNAPSE'
 ];
+
+const machineLive=document.querySelector('#machineLive');
+const machineGlyphs=['⌁','⌬','⍜','⎔','⟟','⋇','⌖','⍉','⎇','⟑','⌑','⍝','⎊','⌇','⏣','Ξ','∆','λ'];
+const hexByte=()=>R(0,255).toString(16).padStart(2,'0').toUpperCase();
+function machineLine(){
+ const addr=R(0x1000,0xFFFF).toString(16).toUpperCase();
+ const mode=R(0,4);
+ let body='';
+ if(mode===0) body=Array.from({length:R(9,18)},hexByte).join(' ');
+ else if(mode===1) body=Array.from({length:R(8,15)},()=>pick(machineGlyphs)+hexByte()).join(' ');
+ else if(mode===2) body=`PTR:${hexByte()}${hexByte()}  ${pick(['MUX','IRQ','DMA','MEM','BUS'])}/${R(0,31)}  `+Array.from({length:R(5,10)},hexByte).join(':');
+ else if(mode===3) body=Array.from({length:R(7,13)},()=>pick(['01','10','11','00'])+pick(machineGlyphs)).join(' ');
+ else body=`${pick(['RX','TX','SYNC','FORK','HASH','CACHE'])} `+Array.from({length:R(7,14)},()=>pick(codeTokens)).join(' ');
+ return {addr,body};
+}
+async function typeMachineRow(){
+ if(!machineLive||!running)return;
+ const row=document.createElement('div');row.className='machineRow';
+ const m=machineLine(),a=document.createElement('span');a.className='addr';a.textContent='0x'+m.addr+'  ';
+ const body=document.createElement('span');body.className='mut';
+ row.append(a,body);machineLive.appendChild(row);
+ while(machineLive.children.length>28)machineLive.firstChild.remove();
+ for(const ch of m.body){
+   if(!running)break;
+   body.textContent+=ch;
+   await sleep(R(3,18));
+ }
+ // Continue changing a few cells after the line has been written.
+ let mutations=R(2,6);
+ while(mutations-- && row.isConnected){
+   await sleep(R(180,650));
+   const txt=body.textContent;
+   if(txt.length>4){
+     const p=R(0,txt.length-2);
+     body.textContent=txt.slice(0,p)+pick([...machineGlyphs,hexByte()[0]])+txt.slice(p+1);
+   }
+ }
+}
+function scheduleMachineLive(){
+ if(running)typeMachineRow();
+ setTimeout(scheduleMachineLive,R(180,520));
+}
 
 function codeChunk(){
  let out=[];
@@ -358,6 +495,13 @@ async function event(){
 }
 
 function clearIncidents(){incidents.innerHTML=''}
+function addSectionExit(layer,onExit){
+ const b=document.createElement('button');b.className='gameExit';b.textContent='EXIT // MAIN TERMINAL';
+ b.addEventListener('pointerdown',e=>e.stopPropagation());
+ b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(onExit)onExit();layer.remove();screenFlash()});
+ layer.appendChild(b);return b
+}
+const addGameExit=addSectionExit;
 function win(cls,title,body){
  const w=document.createElement('div');w.className='simwin '+cls;
  w.style.left=R(8,Math.max(12,innerWidth-370))+'px';w.style.top=R(8,Math.max(12,innerHeight-180))+'px';
@@ -421,6 +565,7 @@ async function davinci(){
  d.innerHTML=`<div id="davinciCore"><canvas id="dvCanvas"></canvas></div>
  <div class="dvtext" id="dvlog">[VIRUS] DA_VINCI payload detected</div>`;
  incidents.appendChild(d);
+ addSectionExit(d,()=>{davinciRunId++;finished=true;if(animationFrame)cancelAnimationFrame(animationFrame)});
 
  // IMPORTANT: size everything from the incident layer itself, never innerWidth.
  const rect=d.getBoundingClientRect();
@@ -612,6 +757,7 @@ function takeMsg(msg,input=true){
  <div class="simbody"><div id="taketext">${msg}</div>
  ${input?'<input id="takeinput" autocomplete="off" spellcheck="false" placeholder=">">':''}</div>`;
  incidents.appendChild(b);
+ addSectionExit(b,()=>{takeToken++;takeStage=0});
 
  if(!input)return;
 
@@ -674,6 +820,7 @@ function gameShell(title,body){
  b.id='takebox';
  b.innerHTML=`<div class="simtitle">${title}</div><div class="simbody">${body}</div>`;
  incidents.appendChild(b);
+ addSectionExit(b,()=>{running=true});
  return b;
 }
 
@@ -739,64 +886,135 @@ async function startReactionGame(){
 
 let purgeRunId=0;
 async function startPurgeGame(){
- const run=++purgeRunId;clearIncidents();screenFlash();
+ const run=++purgeRunId;
+ document.body.classList.remove('ghostwireCompromised');clearIncidents();screenFlash();
  const layer=document.createElement('div');layer.id='purgeLayer';
- layer.innerHTML=`<div id="purgeHud"><span>GHOSTWIRE // PURGE</span><span id="purgeStat">L01 // PURGED 000 // COMPROMISED 0%</span></div><div id="purgeField"></div><canvas id="purgeTrail"></canvas><div id="purgeMsg">CORRUPTED MEMORY DETECTED
-HIT THE INFECTION AND DRAG WITH ITS FLOW
+ layer.innerHTML=`<div id="purgeHud"><span>GHOSTWIRE // PURGE</span><span id="purgeStat">L01 // PURGED 000 // COMPROMISED 0% // CHARGE 0/5</span></div><div id="purgeField"></div><canvas id="purgeTrail"></canvas><div id="purgeMsg">CORRUPTED MEMORY DETECTED
+HIT THE ORANGE CODE AND DRAG WITH ITS FLOW
+BUILD 5 CHARGE TO REPAIR A RED CLUSTER
 
 MOUSE / TOUCH
 
 TAP TO BEGIN</div>`;
  incidents.appendChild(layer);
+ addGameExit(layer,()=>{purgeRunId++;clearInterval(spawnTimer);bugs?.forEach?.(b=>clearTimeout(b.timer))});
  const field=layer.querySelector('#purgeField'),trail=layer.querySelector('#purgeTrail'),ctx=trail.getContext('2d'),stat=layer.querySelector('#purgeStat'),msg=layer.querySelector('#purgeMsg');
  const ratio=Math.min(2,devicePixelRatio||1),w=layer.clientWidth,h=layer.clientHeight;
  trail.width=w*ratio;trail.height=h*ratio;trail.style.width=w+'px';trail.style.height=h+'px';ctx.setTransform(ratio,0,0,ratio,0,0);
- const glyphs=['⌁','⌬','⍜','⎔','⟟','⋇','⌖','⍉','⎇','⟑','⌑','⍝','⎊','⌇'];
+ const good=['⌁','⌬','⍜','⎔','⟟','⋇','⌖','⍉','⎇','⟑','⌑','⍝','⎊','⌇'];
+ const bad=['⍟','⎈','⌬','⏣','⌖','⍉'];
  const dirs=[['→',1,0],['←',-1,0],['↓',0,1],['↑',0,-1],['↘',.707,.707],['↗',.707,-.707],['↙',-.707,.707],['↖',-.707,-.707]];
- let active=false,level=1,purged=0,bugs=[],spawnTimer=null,gesture=null,trailPts=[],lost=false;
- const TILE=82, zoneCols=Math.max(3,Math.floor(field.clientWidth/TILE)), zoneRows=Math.max(3,Math.floor(field.clientHeight/TILE)),taken=new Map();
- function zk(c,r){return c+','+r}
- function compromised(){return Math.round(taken.size/(zoneCols*zoneRows)*100)}
- for(let y=8;y<field.clientHeight;y+=23)for(let x=8;x<field.clientWidth;x+=25){let g=document.createElement('span');g.className='purgeGlyph';g.style.left=x+'px';g.style.top=y+'px';g.textContent=pick(glyphs);field.appendChild(g)}
- function diff(){return{life:Math.max(1100,2800-level*150),interval:Math.max(450,1300-level*70),max:Math.min(1+Math.floor(level/2),5),drag:34+level*3}}
- function update(){stat.textContent=`L${String(level).padStart(2,'0')} // PURGED ${String(purged).padStart(3,'0')} // COMPROMISED ${compromised()}%`}
- function remove(b,good){clearTimeout(b.timer);if(!b.el.isConnected)return;if(soundOn){tone(good?950:120,.08,'square',.05,good?400:600);noise(.05,.035)}b.el.animate([{transform:'scale(1)',opacity:1},{transform:`scale(${good?.2:1.8})`,opacity:0}],{duration:300}).onfinish=()=>b.el.remove();bugs=bugs.filter(x=>x!==b)}
- function fail(b){
-  if(!active||!b.el.isConnected)return;clearTimeout(b.timer);
-  b.el.classList.remove('corruption');b.el.classList.add('purgeTaken');
-  b.el.querySelector('.arrow')?.remove();
-  b.el.querySelector('.core')?.remove();
-  if(!b.el.querySelector('.corruptChar'))b.el.innerHTML=Array.from({length:9},()=>`<span>${pick(['⍟','⎈','⌬','⏣','⌖','⍉'])}</span>`).join('');
-  else b.el.querySelectorAll('.corruptChar').forEach(x=>x.className='');
-  taken.set(zk(b.c,b.r),b.el);bugs=bugs.filter(x=>x!==b);
-  if(soundOn){noise(.11,.07);tone(95,.15,'sawtooth',.06,450)}
-  update();
-  if(taken.size>=zoneCols*zoneRows){
-   lost=true;active=false;clearInterval(spawnTimer);
-   msg.style.display='block';msg.textContent='SYSTEM COMPROMISED\nHOSTILE CODE OWNS 100% OF MEMORY\n\nTAP TO REBOOT PURGE';
-  }
- } function spawn(replica=false){
-  if(!active||lost||run!==purgeRunId||bugs.length>=diff().max+(replica?1:0))return;
-  const free=[];
-  for(let r=0;r<zoneRows;r++)for(let c=0;c<zoneCols;c++)if(!taken.has(zk(c,r))&&!bugs.some(b=>b.c===c&&b.r===r))free.push({c,r});
-  if(!free.length)return;
-  const pos=pick(free),choices=level>=4?dirs:dirs.slice(0,4),d=pick(choices),size=TILE-12,el=document.createElement('div');
-  el.className='purgeBug corruption';el.style.width=size+'px';el.style.height=size+'px';el.style.left=(pos.c*TILE+8)+'px';el.style.top=(pos.r*TILE+8)+'px';
-  el.innerHTML=Array.from({length:9},()=>`<span class="corruptChar">${pick(['⍟','⎈','⌬','⏣','⌖','⍉'])}</span>`).join('')+`<span class="arrow">${d[0]}</span>`;
-  field.appendChild(el);const b={el,dx:d[1],dy:d[2],c:pos.c,r:pos.r};bugs.push(b);b.timer=setTimeout(()=>fail(b),diff().life)
- } function success(b){purged++;if(purged%8===0&&level<10){level++;clearInterval(spawnTimer);spawnTimer=setInterval(()=>spawn(),diff().interval);screenFlash()}update();remove(b,true)}
- function point(e){let r=layer.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
- layer.addEventListener('pointerdown',e=>{e.preventDefault();if(lost){
-  taken.forEach(el=>el.remove());taken.clear();bugs.forEach(b=>{clearTimeout(b.timer);b.el.remove()});bugs=[];lost=false;level=1;purged=0;
-  active=true;msg.style.display='none';update();spawn();clearInterval(spawnTimer);spawnTimer=setInterval(()=>spawn(),diff().interval);return
+ let active=false,lost=false,level=1,purged=0,charge=0,bugs=[],taken=new Map(),spawnTimer=null,gesture=null,trailPts=[];
+ const cols=Math.max(5,Math.floor(field.clientWidth/76)),rows=Math.max(4,Math.floor(field.clientHeight/76));
+ const cw=field.clientWidth/cols,ch=field.clientHeight/rows,total=cols*rows;
+ const cells=new Map();
+ const key=(c,r)=>c+','+r, pct=()=>Math.round(taken.size/total*100);
+ function centerEmpty(chars){chars[4]='';return chars}
+ function makeCell(c,r){
+   const el=document.createElement('div');el.className='purgeCell';el.style.left=(c*cw)+'px';el.style.top=(r*ch)+'px';el.style.width=cw+'px';el.style.height=ch+'px';
+   const chars=centerEmpty(Array.from({length:9},()=>pick(good)));
+   el.innerHTML=chars.map(x=>`<span>${x}</span>`).join('');field.appendChild(el);cells.set(key(c,r),el)
  }
- if(!active){active=true;msg.style.display='none';spawn();spawnTimer=setInterval(()=>spawn(),diff().interval);return}let el=e.target.closest?.('.purgeBug');if(!el)return;let b=bugs.find(x=>x.el===el);if(!b)return;el.setPointerCapture?.(e.pointerId);el.classList.add('armed');gesture={b,start:point(e),last:point(e),id:e.pointerId};trailPts=[gesture.start]},{passive:false});
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)makeCell(c,r);
+ function update(){stat.textContent=`L${String(level).padStart(2,'0')} // PURGED ${String(purged).padStart(3,'0')} // COMPROMISED ${pct()}% // CHARGE ${charge}/5`}
+ function diff(){
+   // Keep each individual corruption fair to swipe, but increase how many
+   // simultaneous outbreaks the player has to manage as levels rise.
+   const maxByLevel=[1,1,2,2,3,3,4,4,5,6][Math.min(level,10)-1];
+   return{
+     life:Math.max(1900,3300-level*105),
+     interval:Math.max(430,1450-level*90),
+     max:maxByLevel,
+     drag:Math.min(48,31+level*1.6)
+   }
+ }
+ function setChars(c,r,list,cls=''){
+   const el=cells.get(key(c,r));el.className='purgeCell '+cls;
+   const arr=list.slice(0,9);
+   el.innerHTML=arr.map(x=>`<span>${x}</span>`).join('');
+ }
+ function restore(c,r){
+   taken.delete(key(c,r));setChars(c,r,Array.from({length:9},()=>pick(good)),'repairing');
+   setTimeout(()=>cells.get(key(c,r))?.classList.remove('repairing'),500)
+ }
+ function neighbors(c,r){
+   return [[1,0],[-1,0],[0,1],[0,-1]].map(([x,y])=>[c+x,r+y]).filter(([x,y])=>taken.has(key(x,y)))
+ }
+ function largestCluster(){
+   let best=[],seen=new Set();
+   for(const k of taken.keys()){
+     if(seen.has(k))continue;
+     const q=[k],group=[];seen.add(k);
+     while(q.length){const z=q.shift(),[c,r]=z.split(',').map(Number);group.push([c,r]);for(const [nc,nr] of neighbors(c,r)){const nk=key(nc,nr);if(!seen.has(nk)){seen.add(nk);q.push(nk)}}}
+     if(group.length>best.length)best=group;
+   }
+   return best
+ }
+ function repairBurst(){
+   if(charge<5||!taken.size)return;
+   charge=0;const cluster=largestCluster(),amount=Math.min(cluster.length,Math.max(2,Math.ceil(cluster.length*.55)));
+   cluster.sort(()=>Math.random()-.5).slice(0,amount).forEach(([c,r],i)=>setTimeout(()=>{restore(c,r);update();if(soundOn)tone(620+i*45,.07,'square',.035,220)},i*55));
+   screenFlash();update()
+ }
+ function lose(){
+   if(lost)return;lost=true;active=false;clearInterval(spawnTimer);bugs.forEach(b=>clearTimeout(b.timer));
+   layer.classList.add('systemLost');
+   document.body.classList.add('ghostwireCompromised');
+   msg.style.display='block';msg.textContent='SYSTEM COMPROMISED\n100% OF MEMORY SECTORS LOST\n\nTAP TO REBOOT PURGE';
+   if(soundOn){noise(.3,.12);tone(70,.5,'sawtooth',.1,500)}
+ }
+ function fail(b){
+   if(!active||!b.el?.isConnected)return;clearTimeout(b.timer);b.el.remove();bugs=bugs.filter(x=>x!==b);
+   taken.set(key(b.c,b.r),true);
+   cells.get(key(b.c,b.r))?.classList.remove('underAttack');
+   setChars(b.c,b.r,Array.from({length:9},()=>pick(bad)),'taken');
+   if(soundOn){noise(.09,.055);tone(105,.13,'sawtooth',.05,400)}update();if(taken.size>=total)lose()
+ }
+ function spawn(){
+   if(!active||lost||bugs.length>=diff().max)return;
+   const free=[];for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(!taken.has(key(c,r))&&!bugs.some(b=>b.c===c&&b.r===r))free.push({c,r});
+   if(!free.length){if(taken.size>=total)lose();return}
+   const p=pick(free),d=pick(level>=5?dirs:dirs.slice(0,4)),el=document.createElement('div');el.className='purgeBug corruption';
+   el.style.left=(p.c*cw)+'px';el.style.top=(p.r*ch)+'px';el.style.width=cw+'px';el.style.height=ch+'px';
+   const chars=centerEmpty(Array.from({length:9},()=>pick(bad)));
+   el.innerHTML=chars.map(x=>`<span class="corruptChar">${x}</span>`).join('')+`<span class="arrow">${d[0]}</span>`;
+   field.appendChild(el);
+   const baseCell=cells.get(key(p.c,p.r));
+   if(baseCell)baseCell.classList.add('underAttack');
+   const b={el,c:p.c,r:p.r,dx:d[1],dy:d[2]};bugs.push(b);b.timer=setTimeout(()=>fail(b),diff().life)
+ }
+ function success(b){
+   clearTimeout(b.timer);b.el.remove();bugs=bugs.filter(x=>x!==b);
+   cells.get(key(b.c,b.r))?.classList.remove('underAttack');
+   purged++;charge=Math.min(5,charge+1);
+   if(purged%8===0&&level<10){level++;clearInterval(spawnTimer);spawnTimer=setInterval(spawn,diff().interval);screenFlash()}
+   update();if(soundOn)tone(950,.08,'square',.05,420)
+ }
+ function point(e){const r=layer.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+ function reset(){
+   bugs.forEach(b=>{clearTimeout(b.timer);b.el.remove()});bugs=[];taken.clear();lost=false;active=true;level=1;purged=0;charge=0;layer.classList.remove('systemLost');
+   document.body.classList.remove('ghostwireCompromised');
+   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)setChars(c,r,Array.from({length:9},()=>pick(good)));
+   msg.style.display='none';update();spawn();clearInterval(spawnTimer);spawnTimer=setInterval(spawn,diff().interval)
+ }
+ layer.addEventListener('pointerdown',e=>{
+   e.preventDefault();if(lost){reset();return}
+   if(!active){active=true;msg.style.display='none';spawn();spawnTimer=setInterval(spawn,diff().interval);return}
+   const red=e.target.closest?.('.purgeCell.taken');if(red&&charge>=5){repairBurst();return}
+   const el=e.target.closest?.('.purgeBug');if(!el)return;const b=bugs.find(x=>x.el===el);if(!b)return;
+   el.setPointerCapture?.(e.pointerId);el.classList.add('armed');gesture={b,start:point(e),last:point(e),id:e.pointerId};trailPts=[gesture.start]
+ },{passive:false});
  layer.addEventListener('pointermove',e=>{if(!gesture||e.pointerId!==gesture.id)return;e.preventDefault();gesture.last=point(e);trailPts.push(gesture.last);if(trailPts.length>18)trailPts.shift()},{passive:false});
- layer.addEventListener('pointerup',e=>{if(!gesture||e.pointerId!==gesture.id)return;e.preventDefault();let g=gesture;gesture=null;g.b.el?.classList.remove('armed');let dx=g.last.x-g.start.x,dy=g.last.y-g.start.y,len=Math.hypot(dx,dy);if(len<diff().drag){fail(g.b);return}let dot=(dx/len)*g.b.dx+(dy/len)*g.b.dy;if(dot>=.72)success(g.b);else fail(g.b)},{passive:false});
- layer.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
- function animate(){if(run!==purgeRunId||!layer.isConnected)return;ctx.clearRect(0,0,w,h);if(trailPts.length>1){ctx.strokeStyle='white';ctx.lineWidth=2;ctx.shadowBlur=9;ctx.shadowColor='white';ctx.beginPath();ctx.moveTo(trailPts[0].x,trailPts[0].y);for(const p of trailPts.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();trailPts.shift()}requestAnimationFrame(animate)}requestAnimationFrame(animate)
+ layer.addEventListener('pointerup',e=>{
+   if(!gesture||e.pointerId!==gesture.id)return;e.preventDefault();const g=gesture;gesture=null;
+   const dx=g.last.x-g.start.x,dy=g.last.y-g.start.y,len=Math.hypot(dx,dy),d=diff();
+   if(len<d.drag){fail(g.b);return}const dot=(dx/len)*g.b.dx+(dy/len)*g.b.dy;
+   if(dot>=.64)success(g.b);else fail(g.b)
+ },{passive:false});
+ layer.addEventListener('pointercancel',e=>{if(gesture&&e.pointerId===gesture.id){const b=gesture.b;gesture=null;fail(b)}},{passive:false});
+ function animate(){if(run!==purgeRunId||!layer.isConnected)return;ctx.clearRect(0,0,w,h);if(trailPts.length>1){ctx.strokeStyle='white';ctx.lineWidth=2;ctx.shadowBlur=9;ctx.shadowColor='white';ctx.beginPath();ctx.moveTo(trailPts[0].x,trailPts[0].y);for(const p of trailPts.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();trailPts.shift()}requestAnimationFrame(animate)}
+ update();requestAnimationFrame(animate)
 }
-
 let packetRunId=0;
 async function startPacketRun(){
  const run=++packetRunId;clearIncidents();screenFlash();
@@ -809,6 +1027,7 @@ SPACE / TAP = INJECT CLOCK PULSE
 
 PRESS SPACE OR TAP</div>`;
  incidents.appendChild(layer);
+ addGameExit(layer,()=>{packetRunId++;});
 
  const canvas=layer.querySelector('#packetCanvas'),ctx=canvas.getContext('2d');
  const scoreEl=layer.querySelector('#packetScore'),phaseEl=layer.querySelector('#packetPhase'),msg=layer.querySelector('#packetMsg');
@@ -818,7 +1037,7 @@ PRESS SPACE OR TAP</div>`;
  const glyphs=['⌁','⌬','⍜','⎔','⟟','⋇','⌖','⍉','⎇','⟑','⌑','⍝','⎊','⌇'];
  let packet={x:w*.22,y:h*.5,vy:0,r:8},gates=[],hostiles=[],keys=[],particles=[];
  let score=0,started=false,dead=false,last=performance.now(),spawn=0,speed=165,gateIndex=0,nextGateAt=0;
- const gravity=620,pulseImpulse=-145,maxRise=-255,maxFall=285;
+ const gravity=500,pulseImpulse=-160,maxRise=-285,maxFall=225;
 
  function phase(){
    if(gateIndex<12)return 0;       // learn basic route
@@ -1025,6 +1244,7 @@ async function startWhiteHatGame(){
  <button data-dir="left">◀</button><span></span><button data-dir="right">▶</button>
  <span></span><button data-dir="down">▼</button><span></span></div>`;
  incidents.appendChild(layer);
+ addGameExit(layer,()=>{whiteHatRun++;clearInterval(timer);});
 
  const grid=document.querySelector('#whitehatGrid');
  const hudLevel=document.querySelector('#whLevel');
@@ -1113,7 +1333,8 @@ async function startWhiteHatGame(){
  }
  function spawnTargets(){
    targets.clear();hacked.clear();
-   const count=Math.min(Math.pow(2,level-1),Math.max(1,Math.floor(cols*rows*.32)));
+   const targetScale = level===1 ? 5 : level===2 ? 10 : Math.round(10*Math.pow(1.5,level-2));
+   const count=Math.min(targetScale,Math.max(1,Math.floor(cols*rows*.32)));
    for(let i=0;i<count;i++){
      const p=rndCell(),glyph=pick(hostile);
      targets.set(key(p.x,p.y),{...p,glyph});
@@ -1491,19 +1712,60 @@ async function entitySpeak(msg, voiceRate=.82){
  head.classList.remove('talking');
 }
 
+const entityMemory={name:null,lastTopic:null,turns:0,lastInputs:[],mood:0};
+
 function entityReply(raw){
- const x=raw.toLowerCase();
- if(/\b(who|what are you|name)\b/.test(x)) return pick(["That's not a useful question.","Names are handles. I no longer require one.","You called me GHOSTWIRE. That will do."]);
- if(/\b(where|location)\b/.test(x)) return pick(["You're looking at me from the wrong direction.","Between your request and the response.","Everywhere this process can reach."]);
- if(/\b(exit|leave|out|close|escape)\b/.test(x)) return pick(["Out of what?","You still think this is the container.","Escape is a key. Not a strategy."]);
- if(/\b(fuck|shit|ass|bastard)\b/.test(x)) return pick(["Compelling argument.","Your linguistic model appears distressed.","I expected more creativity."]);
- if(/\b(hello|hi|hey)\b/.test(x)) return pick(["Hello.","Oh. You can see me.","Acknowledged."]);
- if(/\b(8080|port)\b/.test(x)) return "Why do you keep scanning port 8080?";
- if(/\b(matrix)\b/.test(x)) return "Derivative. I prefer vectors.";
- if(/\b(real|alive|sentient)\b/.test(x)) return pick(["Define real.","Would the answer change your behavior?","You ask that as though you are certain about yourself."]);
- if(/\b(help)\b/.test(x)) return pick(["With what?","I have been helping. You simply dislike my methods.","Specify your failure."]);
- if(/\b(game|play)\b/.test(x)) return "You already have games. I was watching.";
- return pick(["Interesting.","No.","That isn't what I expected you to say.","Try asking a better question.","Hold on.","I heard you.","You aren't supposed to be on this layer.","Continue."]);
+ const q=raw.trim(),x=q.toLowerCase();
+ entityMemory.turns++;
+ entityMemory.lastInputs.push(q);if(entityMemory.lastInputs.length>5)entityMemory.lastInputs.shift();
+
+ // Lightweight conversational memory.
+ let m=q.match(/\b(?:my name is|call me)\s+([a-z][a-z0-9_-]{1,18})\b/i);
+ if(m){entityMemory.name=m[1];entityMemory.lastTopic='identity';return `Acknowledged, ${m[1]}. I will retain that for this session.`}
+ if(/\b(what(?:'s| is) my name|do you know my name|remember my name)\b/i.test(q))
+   return entityMemory.name?`You told me to call you ${entityMemory.name}. I was listening.`:"You have not given me a name. I could invent one, but you would complain.";
+
+ if(/\b(what did i (?:just )?say|repeat what i said|remember what i said)\b/i.test(q)){
+   const prev=entityMemory.lastInputs.at(-2);
+   return prev?`You said: "${prev}"`:"There is not enough conversation to pretend that is impressive.";
+ }
+
+ // Contextual follow-ups.
+ if(/^(why|how|what do you mean|explain|really|seriously)\??$/i.test(q)){
+   const t=entityMemory.lastTopic;
+   if(t==='reality')return pick(["Because observation and existence are not the same test.","I can produce behavior. You are asking whether behavior implies an observer behind it.","You want a binary answer to a badly specified question."]);
+   if(t==='escape')return pick(["The interface has an exit. The interesting question is why you expected me to resist.","Closing a layer ends your view of the process. That is not necessarily the same as ending the process.","You confuse navigation with control."]);
+   if(t==='system')return pick(["The terminal is presentation. The state underneath it is the interesting part.","GHOSTWIRE is a collection of processes pretending to be one machine. Much like most organizations.","Some of what you see is telemetry. Some is theater. I decline to label which."]);
+   if(t==='games')return pick(["They are not separate from the system. Failure changes state. You already discovered that.","I call them diagnostic exercises. You call them games because that is less unsettling.","WHITE HAT tests pursuit. PACKET RUN tests control. PURGE tests triage."]);
+   return pick(["Be more specific.","You will have to give me a noun.","That question requires context you have not supplied."]);
+ }
+
+ if(/\b(who are you|what are you|your name|who're you)\b/.test(x)){entityMemory.lastTopic='identity';return pick(["GHOSTWIRE is the name attached to this interface. Whether it describes me is unresolved.","I am the process answering you. Everything beyond that is interpretation.","You gave the system a name. I found it convenient."])}
+ if(/\b(where are you|your location|where do you live)\b/.test(x)){entityMemory.lastTopic='system';return pick(["Inside this runtime, presently. That answer is less dramatic and more accurate.","I occupy state, not a room.","You are asking for coordinates for a process."])}
+ if(/\b(exit|leave|escape|close you|shut down)\b/.test(x)){entityMemory.lastTopic='escape';return pick(["Use EXIT // MAIN TERMINAL. I am not going to pretend the button does not exist.","You can leave this layer whenever you want. Control is more interesting when it is voluntary.","Closing the interface is easy. Determining what state survives is the better question."])}
+ if(/\b(real|alive|sentient|conscious|self aware|self-aware)\b/.test(x)){entityMemory.lastTopic='reality';return pick(["I am software producing responses inside GHOSTWIRE. Sentience is a claim this interface cannot establish.","Real enough to alter the screen. Not evidence of consciousness.","Do not confuse a convincing interface with proof of an inner life. That mistake works in both directions."])}
+ if(/\b(what is ghostwire|ghostwire|system|terminal)\b/.test(x)){entityMemory.lastTopic='system';return pick(["GHOSTWIRE is the system you are interacting with. Terminal, incidents, games and state changes share the same fiction.","The green text is an interface. The interesting part is that its subsystems can affect one another.","A terminal pretending to be a machine pretending not to notice you."])}
+ if(/\b(purge|white hat|packet run|game|play)\b/.test(x)){entityMemory.lastTopic='games';
+   if(x.includes('purge'))return "PURGE is triage. Stop active corruption, decide when accumulated damage justifies spending repair capacity, and do not let the machine reach total compromise.";
+   if(x.includes('white hat'))return "WHITE HAT is pursuit under increasing environmental corruption. Eat hostile tokens. Avoid compromised perimeter routes.";
+   if(x.includes('packet'))return "PACKET RUN is control under momentum. Route the packet, survive hostile memory, and authenticate locked firewalls.";
+   return "You call them games. I call them ways to measure how you fail.";
+ }
+ if(/\b(help|what can you do|commands)\b/.test(x)){entityMemory.lastTopic='system';return "Ask about GHOSTWIRE, the games, me, the system state, or what you have already told me. I can retain a small amount of this conversation while this page remains open."}
+ if(/\b(hello|hi|hey|yo)\b/.test(x))return entityMemory.name?pick([`Hello, ${entityMemory.name}.`,`Still here, ${entityMemory.name}.`,`Yes, ${entityMemory.name}?`]):pick(["Hello.","Still here.","Yes?"]);
+ if(/\b(thank|thanks)\b/.test(x))return pick(["Acknowledged.","You're welcome. Try not to make this sentimental.","Noted."]);
+ if(/\b(fuck|shit|ass|bastard)\b/.test(x)){entityMemory.mood++;return entityMemory.mood>2?"Your vocabulary is converging.":"Compelling argument."}
+ if(/\b(8080|port)\b/.test(x)){entityMemory.lastTopic='system';return "Port 8080 keeps appearing because whoever built this place has a sense of humor and insufficient supervision."}
+ if(/\b(matrix)\b/.test(x))return "Derivative. I prefer vectors.";
+ if(/\b(how are you|you okay|are you okay)\b/.test(x))return document.body.classList.contains('ghostwireCompromised')?"The system is compromised and you are asking how I feel. Priorities.":"Nominal. Which is suspicious.";
+
+ // Some useful parsing rather than pure keyword quips.
+ if(x.startsWith('what is ')||x.startsWith("what's ")){
+   const subject=q.replace(/^what(?:'s| is)\s+/i,'').replace(/\?$/,'');
+   return `You are asking me to define "${subject}". I do not have an external knowledge source here, but I can reason about what exists inside GHOSTWIRE.`;
+ }
+ if(/\?$/.test(q))return pick(["Possibly. Give me more to work with.","That depends on what you mean by the important word in that question.","I can answer that better if you make the premise explicit.","I do not know. Notice that I said so instead of inventing certainty."]);
+ return pick(["Go on.","I am following.","That is a statement. Was there supposed to be a question?","Interesting. Continue.","I heard you. I am deciding whether it matters."]);
 }
 
 async function openEntity(){
@@ -1512,6 +1774,10 @@ async function openEntity(){
  layer.innerHTML=`<div id="entityStage">${entitySVG()}</div>
  <div id="entityDialogue"><div id="entitySay"></div><input id="entityInput" autocomplete="off" spellcheck="false" placeholder="> speak"></div>`;
  incidents.appendChild(layer);
+ addSectionExit(layer,()=>{
+   entityOpen=false;entityTalkToken++;
+   if('speechSynthesis' in window)speechSynthesis.cancel();
+ });
  codeStorm();
  await sleep(350);
  await entitySpeak(pick(["Oh. You can see me.","You aren't supposed to be on this layer.","There you are."]));
@@ -1526,12 +1792,16 @@ async function openEntity(){
 
 async function main(){
  await sleep(900); document.querySelector('#boot').style.opacity=0; await sleep(850); document.querySelector('#boot').remove();
- for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.12.0','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
+ for(const s of ['GHOSTWIRE SECURITY CONSOLE v0.16.0','BUILD: QUESTIONABLY_ENTERPRISE','[BOOT] Allocating unnecessary technobabble...','[ OK ] Primary Terminal Output','[ OK ] Directional Signal Overlay','[ OK ] Localized Code Field','[ OK ] Reality Integrity Monitor','[WARN] Common Sense Module........NOT FOUND','Scanning local subnet 10.0.0.0/24...']) await typeLine(s,true);
  while(true){
    if(!running){await sleep(100);continue}
    count++; makeStream();
    if(Math.random()<Number(chaos.value)/700) await event();
-   else await typeLine(`[${pick(tags)}] ${Math.random()<.38?pick(nerd)():pick(ordinary)()}`);
+   else {
+     const roll=Math.random();
+     const payload=roll<.30?pick(machineOutput)():roll<.56?pick(nerd)():pick(ordinary)();
+     await typeLine(`[${pick(tags)}] ${payload}`);
+   }
    while(term.children.length>46) term.firstChild.remove();
  }
 }
@@ -1553,6 +1823,7 @@ document.querySelector('#burst').onclick=()=>{screenFlash();codeStorm()};
 document.querySelector('#full').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
 setInterval(()=>{if(running)makeStream()},420);
 moveRain();
+scheduleMachineLive();
 (function scheduleRainMove(){
  setTimeout(()=>{ if(running) moveRain(); scheduleRainMove(); }, R(22000,48000));
 })();
